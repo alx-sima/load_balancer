@@ -1,0 +1,11 @@
+# Checker files
+check.sh
+cpplint.py
+in/
+out/
+ref/
+
+# Build artifacts
+*.o
+*.h.gch
+
