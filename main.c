@@ -1,4 +1,4 @@
-/* Copyright 2023 <> */
+/* Copyright 2023 Sima Alexandru (312CA) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +10,8 @@
 #define KEY_LENGTH 128
 #define VALUE_LENGTH 65536
 
-void get_key_value(char* key, char* value, char* request) {
+void get_key_value(char *key, char *value, char *request)
+{
 	int key_start = 0, value_start = 0;
 	int key_finish = 0, value_finish = 0;
 	int key_index = 0, value_index = 0;
@@ -36,7 +37,8 @@ void get_key_value(char* key, char* value, char* request) {
 	value[value_index - 1] = 0;
 }
 
-void get_key(char* key, char* request) {
+void get_key(char *key, char *request)
+{
 	int key_start = 0, key_index = 0;
 
 	for (unsigned int i = 0; i < strlen(request); ++i) {
@@ -48,11 +50,12 @@ void get_key(char* key, char* request) {
 	}
 }
 
-void apply_requests(FILE* input_file) {
+void apply_requests(FILE *input_file)
+{
 	char request[REQUEST_LENGTH] = {0};
 	char key[KEY_LENGTH] = {0};
 	char value[VALUE_LENGTH] = {0};
-	load_balancer* main_server = init_load_balancer();
+	load_balancer *main_server = init_load_balancer();
 
 	while (fgets(request, REQUEST_LENGTH, input_file)) {
 		request[strlen(request) - 1] = 0;
@@ -69,11 +72,11 @@ void apply_requests(FILE* input_file) {
 			get_key(key, request);
 
 			int index_server = 0;
-			char *retrieved_value = loader_retrieve(main_server,
-											key, &index_server);
+			char *retrieved_value =
+				loader_retrieve(main_server, key, &index_server);
 			if (retrieved_value) {
-				printf("Retrieved %s from server %d.\n",
-						retrieved_value, index_server);
+				printf("Retrieved %s from server %d.\n", retrieved_value,
+					   index_server);
 			} else {
 				printf("Key %s not present.\n", key);
 			}
@@ -84,7 +87,7 @@ void apply_requests(FILE* input_file) {
 
 			loader_add_server(main_server, server_id);
 		} else if (!strncmp(request, "remove_server",
-					sizeof("remove_server") - 1)) {
+							sizeof("remove_server") - 1)) {
 			int server_id = atoi(request + sizeof("remove_server"));
 
 			loader_remove_server(main_server, server_id);
@@ -96,7 +99,8 @@ void apply_requests(FILE* input_file) {
 	free_load_balancer(main_server);
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
 	FILE *input;
 
 	if (argc != 2) {
