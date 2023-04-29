@@ -1,5 +1,6 @@
 # Checker files
 check.sh
+checkstyle.txt
 cpplint.py
 in/
 out/
@@ -7,5 +8,8 @@ ref/
 
 # Build artifacts
 *.o
+*.d
 *.h.gch
+tags
+tema2
 
