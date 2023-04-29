@@ -3,21 +3,23 @@
 #define HASHTABLE_H_
 #include <stddef.h>
 
-typedef struct list {
-	void *data;
-	struct list *next;
-} list;
+#include "list.h"
 
 typedef struct hashtable {
 	unsigned int num_buckets;
-	size_t data_size;
 	list **buckets;
+
+	size_t data_size;
+	size_t key_size;
+
 	int (*hash_func)(void *);
 } hashtable;
 
-hashtable *new_ht(unsigned int num_buckets, size_t data_size, int (*hash_func)(void *));
+hashtable *create_ht(unsigned int num_buckets, size_t data_size, size_t key_size, int (*hash_func)(void *));
 
-int insert_value_ht(hashtable *ht, void *value);
+void insert_item_ht(hashtable *ht, void *key, void *value);
+void remove_item_ht(hashtable *ht, void *key);
+void *get_item_ht(hashtable *ht, void *key);
 
 void delete_ht(hashtable *ht);
 

@@ -3,55 +3,48 @@
 #include <string.h>
 
 #include "hashtable.h"
+#include "list.h"
+#include "utils.h"
 
-hashtable *new_ht(unsigned int num_buckets, size_t data_size,
-				  int (*hash_func)(void *))
+hashtable *create_ht(unsigned int num_buckets, size_t key_size,
+					 size_t data_size, int (*hash_func)(void *))
 {
 	hashtable *ht = malloc(sizeof(hashtable));
-	if (!ht)
-		return NULL;
+	DIE(!ht, ""); // TODO
 
 	ht->num_buckets = num_buckets;
-	ht->data_size = data_size;
-	ht->hash_func = hash_func;
 	ht->buckets = calloc(num_buckets, sizeof(list *));
-	if (!ht->buckets) {
-		free(ht);
-		return NULL;
-	}
+	DIE(!ht->buckets, ""); // TODO
+
+	ht->key_size = key_size;
+	ht->data_size = data_size;
+
+	ht->hash_func = hash_func;
+
 	return ht;
 }
 
-int insert_value_list(list **l, void *value, size_t data_size)
+void insert_item_ht(hashtable *ht, void *key, void *value)
 {
-	list *node = malloc(sizeof(list));
-	if (!node)
-		return 0;
-
-	node->data = malloc(data_size);
-	if (!node->data) {
-		free(node);
-		return 0;
-	}
-	memcpy(node->data, value, data_size);
-
-	node->next = *l;
-	*l = node;
-	return 1;
+	unsigned int hash = ht->hash_func(key) % ht->num_buckets;
+	insert_item_list(&ht->buckets[hash], key, value, ht->key_size,
+					 ht->data_size);
 }
 
-int insert_value_ht(hashtable *ht, void *value)
+void remove_item_ht(hashtable *ht, void *key)
 {
-	unsigned int hash = ht->hash_func(value) % ht->num_buckets;
-	return insert_value_list(&ht->buckets[hash], value, ht->data_size);
+	unsigned int hash = ht->hash_func(key) % ht->num_buckets;
+	list *item_node = pop_item_list(&ht->buckets[hash], key, ht->key_size);
+
+	free(item_node->key);
+	free(item_node->data);
+	free(item_node);
 }
 
-void delete_list(list *l)
+void *get_item_ht(hashtable *ht, void *key)
 {
-	while (l) {
-		free(l->data);
-		l = l->next;
-	}
+	unsigned int hash = ht->hash_func(key) % ht->num_buckets;
+	return get_item_list(ht->buckets[hash], key, ht->key_size);
 }
 
 void delete_ht(hashtable *ht)

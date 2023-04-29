@@ -1,4 +1,4 @@
-/* Copyright 2023 <> */
+/* Copyright 2023 Sima Alexandru (312CA) */
 #ifndef SERVER_H_
 #define SERVER_H_
 

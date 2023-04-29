@@ -2,43 +2,45 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "hashtable.h"
 #include "server.h"
+#include "utils.h"
+
+// FIXME
+#define KEY_LENGTH 128
+#define VALUE_LENGTH 65536
 
 struct server_memory {
-	/* TODO 0 */
+	hashtable *database;
 };
 
 server_memory *init_server_memory()
 {
-	/* TODO 1 */
-	return NULL;
+	struct server_memory *server = malloc(sizeof(struct server_memory));
+	DIE(!server, "failed server malloc()\n");
+
+	server->database = create_ht(10, KEY_LENGTH, VALUE_LENGTH, NULL);
+	DIE(!server->database, "failed server database malloc()\n");
+	return server;
 }
 
 void server_store(server_memory *server, char *key, char *value)
 {
-	/* TODO 2 */
-	(void)server;
-	(void)key;
-	(void)value;
+	insert_item_ht(server->database, key, value);
 }
 
 char *server_retrieve(server_memory *server, char *key)
 {
-	/* TODO 3 */
-	(void)server;
-	(void)key;
-	return NULL;
+	return get_item_ht(server->database, key);
 }
 
 void server_remove(server_memory *server, char *key)
 {
-	/* TODO 4 */
-	(void)server;
-	(void)key;
+	remove_item_ht(server->database, key);
 }
 
 void free_server_memory(server_memory *server)
 {
-	/* TODO 5 */
-	(void)server;
+	delete_ht(server->database);
+	free(server);
 }
