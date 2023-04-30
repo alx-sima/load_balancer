@@ -4,20 +4,31 @@
 #include "list.h"
 #include "utils.h"
 
-void insert_item_list(list **l, void *key, void *value, size_t key_size,
-					  size_t data_size)
+list *create_node(void *key, void *value, size_t key_size, size_t data_size)
 {
 	list *node = malloc(sizeof(list));
 	DIE(!node, ""); // TODO
 
-	node->key = malloc(key_size);
-	DIE(!node->key, ""); // TODO
-	node->data = malloc(data_size);
-	DIE(!node->data, ""); // TODO
+	node->info = malloc(sizeof(dict_entry));
+	DIE(!node->info, ""); // TODO
 
-	memcpy(node->key, key, key_size);
-	memcpy(node->data, value, data_size);
+	node->info->key = malloc(key_size);
+	DIE(!node->info->key, ""); // TODO
 
+	node->info->data = malloc(data_size);
+	DIE(!node->info->data, ""); // TODO
+
+	memcpy(node->info->key, key, key_size);
+	memcpy(node->info->data, value, data_size);
+
+	node->next = NULL;
+	return node;
+}
+
+void insert_item_list(list **l, void *key, void *value, size_t key_size,
+					  size_t data_size)
+{
+	list *node = create_node(key, value, key_size, data_size);
 	node->next = *l;
 	*l = node;
 }
@@ -28,7 +39,7 @@ list *pop_item_list(list **l, void *key, size_t key_size)
 	list *curr = *l;
 
 	while (curr) {
-		if (memcmp(curr->key, key, key_size) == 0) {
+		if (memcmp(curr->info->key, key, key_size) == 0) {
 			if (prev)
 				prev->next = curr->next;
 			else
@@ -46,19 +57,27 @@ list *pop_item_list(list **l, void *key, size_t key_size)
 void *get_item_list(list *l, void *key, size_t key_size)
 {
 	while (l) {
-		if (memcmp(l->key, key, key_size) == 0)
-			return l->data;
+		if (memcmp(l->info->key, key, key_size) == 0)
+			return l->info->data;
 		l = l->next;
 	}
 
 	return NULL;
 }
 
+void delete_node(list *l)
+{
+	free(l->info->key);
+	free(l->info->data);
+	free(l->info);
+	free(l);
+}
+
 void delete_list(list *l)
 {
 	while (l) {
-		free(l->key);
-		free(l->data);
-		l = l->next;
+		list *next = l->next;
+		delete_node(l);
+		l = next;
 	}
 }

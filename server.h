@@ -50,4 +50,6 @@ void server_remove(server_memory *server, char *key);
  */
 char *server_retrieve(server_memory *server, char *key);
 
+void transfer_items(server_memory *dest, server_memory *src, unsigned int max_hash);
+
 #endif /* SERVER_H_ */

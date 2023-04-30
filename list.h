@@ -3,10 +3,13 @@
 #define LIST_H_
 #include <stddef.h>
 
-typedef struct list {
+typedef struct {
 	void *key;
 	void *data;
+} dict_entry;
 
+typedef struct list {
+	dict_entry *info;
 	struct list *next;
 } list;
 

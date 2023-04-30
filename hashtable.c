@@ -7,7 +7,7 @@
 #include "utils.h"
 
 hashtable *create_ht(unsigned int num_buckets, size_t key_size,
-					 size_t data_size, int (*hash_func)(void *))
+					 size_t data_size, unsigned int (*hash_func)(void *))
 {
 	hashtable *ht = malloc(sizeof(hashtable));
 	DIE(!ht, ""); // TODO
@@ -36,8 +36,9 @@ void remove_item_ht(hashtable *ht, void *key)
 	unsigned int hash = ht->hash_func(key) % ht->num_buckets;
 	list *item_node = pop_item_list(&ht->buckets[hash], key, ht->key_size);
 
-	free(item_node->key);
-	free(item_node->data);
+	free(item_node->info->key);
+	free(item_node->info->data);
+	free(item_node->info);
 	free(item_node);
 }
 
@@ -45,6 +46,20 @@ void *get_item_ht(hashtable *ht, void *key)
 {
 	unsigned int hash = ht->hash_func(key) % ht->num_buckets;
 	return get_item_list(ht->buckets[hash], key, ht->key_size);
+}
+
+dict_entry *pop_hash_entry(hashtable *ht, unsigned int hash)
+{
+	list *hash_node = ht->buckets[hash];
+	if (!hash_node)
+		return NULL;
+
+	dict_entry *entry = hash_node->info;
+
+	ht->buckets[hash] = ht->buckets[hash]->next;
+	free(hash_node);
+
+	return entry;
 }
 
 void delete_ht(hashtable *ht)

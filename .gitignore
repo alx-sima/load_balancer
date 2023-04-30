@@ -7,9 +7,11 @@ out/
 ref/
 
 # Build artifacts
+.gdb_history
+tags
+tema2
+vgcore.*
 *.o
 *.d
 *.h.gch
-tags
-tema2
 

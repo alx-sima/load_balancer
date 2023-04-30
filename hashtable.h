@@ -12,15 +12,15 @@ typedef struct hashtable {
 	size_t data_size;
 	size_t key_size;
 
-	int (*hash_func)(void *);
+	unsigned int (*hash_func)(void *);
 } hashtable;
 
-hashtable *create_ht(unsigned int num_buckets, size_t data_size, size_t key_size, int (*hash_func)(void *));
+hashtable *create_ht(unsigned int num_buckets, size_t data_size, size_t key_size, unsigned int (*hash_func)(void *));
 
 void insert_item_ht(hashtable *ht, void *key, void *value);
 void remove_item_ht(hashtable *ht, void *key);
 void *get_item_ht(hashtable *ht, void *key);
-
+dict_entry *pop_hash_entry(hashtable *ht, unsigned int hash);
 void delete_ht(hashtable *ht);
 
 #endif /* HASHTABLE_H_ */

@@ -1,6 +1,6 @@
 # Copyright 2023 Sima Alexandru (312CA)
 CC=gcc
-CFLAGS=-std=c99 -Wall -Wextra
+CFLAGS=-std=c99 -Wall -Wextra -g
 
 TARGET=tema2
 SRC=$(wildcard *.c)
@@ -28,5 +28,5 @@ $(TARGET): $(OBJ)
 pack:
 
 clean:
-	rm -f $(TARGET) tags *.o *.d *.h.gch
+	rm -f $(TARGET) tags vgcore.* *.o *.d *.h.gch
 
