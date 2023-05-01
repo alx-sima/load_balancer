@@ -214,7 +214,7 @@ void loader_store(load_balancer *main, char *key, char *value, int *server_id)
 
 	/* Pentru ca hashringul este circular, daca nu se gaseste un hash mai mare,
 	 * obiectul va ajunge in primul server */
-	*server_id = 0;
+	*server_id = main->hashring[0].id;
 
 	// TODO: cautare binara
 	for (unsigned int i = 0; i < main->hashring_size; ++i) {
@@ -232,7 +232,7 @@ char *loader_retrieve(load_balancer *main, char *key, int *server_id)
 {
 	unsigned int hash = hash_function_key(key);
 
-	*server_id = 0;
+	*server_id = main->hashring[0].id;
 
 	// TODO: cautare binara
 	for (unsigned int i = 0; i < main->hashring_size; ++i) {
