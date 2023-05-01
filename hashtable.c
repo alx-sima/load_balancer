@@ -69,3 +69,17 @@ void delete_ht(hashtable *ht)
 	free(ht->buckets);
 	free(ht);
 }
+
+void debug_print_everything_ht(hashtable *ht)
+{
+	fprintf(stderr, "printing every entry");
+	for (unsigned int i = 0; i < ht->num_buckets; ++i) {
+		fprintf(stderr, "hash %u: ", i);
+
+		dict_entry *entry;
+		while ((entry = pop_hash_entry(ht, i))) {
+			fprintf(stderr, "(key: %p, val: %p), ", entry->key, entry->data);
+		}
+		fprintf(stderr, "\n");
+	}
+}

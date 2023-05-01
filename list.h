@@ -13,7 +13,8 @@ typedef struct list {
 	struct list *next;
 } list;
 
-void insert_item_list(list **l, void *key, void *value, size_t key_size, size_t data_size);
+void insert_item_list(list **l, void *key, void *value, size_t key_size,
+					  size_t data_size);
 list *pop_item_list(list **l, void *key, size_t key_size);
 
 void *get_item_list(list *l, void *key, size_t key_size);

@@ -14,8 +14,8 @@ build: $(TARGET)
 tags: $(SRC)
 	ctags $?
 
-format: $(SRC)
-	clang-format -i $?
+format:
+	clang-format -i *.{c,h}
 
 $(TARGET): $(OBJ)
 	$(CC) $^ -o $@

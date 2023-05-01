@@ -48,7 +48,8 @@ void free_server_memory(server_memory *server)
 void transfer_items(server_memory *dest, server_memory *src,
 					unsigned int max_hash)
 {
-	for (unsigned int i = 0; i < max_hash && i < src->database->num_buckets; ++i) {
+	for (unsigned int i = 0; i < max_hash && i < src->database->num_buckets;
+		 ++i) {
 		dict_entry *entry;
 		while ((entry = pop_hash_entry(src->database, i))) {
 			insert_item_ht(dest->database, entry->key, entry->data);
