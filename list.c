@@ -4,18 +4,8 @@
 #include "list.h"
 #include "utils.h"
 
-static list *list_create_node(void *key, void *value, size_t key_size,
-							  size_t data_size);
-
 static void list_delete_node(list *l);
 
-void list_push_item(list **l, void *key, void *value, size_t key_size,
-					size_t data_size)
-{
-	list *node = list_create_node(key, value, key_size, data_size);
-	node->next = *l;
-	*l = node;
-}
 
 list *list_pop_item(list **l, void *key, size_t key_size)
 {
@@ -58,7 +48,7 @@ void list_destroy(list *l)
 	}
 }
 
-static list *list_create_node(void *key, void *value, size_t key_size,
+list *list_create_node(void *key, void *value, size_t key_size,
 							  size_t data_size)
 {
 	list *node = malloc(sizeof(list));

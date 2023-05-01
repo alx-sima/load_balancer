@@ -47,7 +47,7 @@ void free_server_memory(server_memory *server)
 }
 
 void transfer_items(server_memory *dest, server_memory *src,
-				 unsigned int max_hash)
+					unsigned int max_hash)
 {
 	unsigned int buckets_left = src->database->num_buckets;
 	for (unsigned int hash = 0; hash < max_hash && buckets_left--; ++hash) {

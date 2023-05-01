@@ -177,7 +177,7 @@ void loader_add_server(load_balancer *main, int server_id)
 	}
 
 	ht_store_item(main->servers_info, &server_id, &new_server_info);
-	for (int i = 0; i < main->hashring_size; ++i) {
+	for (size_t i = 0; i < main->hashring_size; ++i) {
 		fprintf(stderr, "%u ", main->hashring[i].hash);
 	}
 	fprintf(stderr, "\n");

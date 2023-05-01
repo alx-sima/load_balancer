@@ -32,7 +32,26 @@ unsigned int ht_compute_hash(hashtable *ht, void *key)
 void ht_store_item(hashtable *ht, void *key, void *value)
 {
 	unsigned int hash = ht_compute_hash(ht, key);
-	list_push_item(&ht->buckets[hash], key, value, ht->key_size, ht->data_size);
+	list *bucket_iter = ht->buckets[hash];
+	
+	/* Nodul se insereaza la inceputul listei */
+	if (!bucket_iter || hash < ht_compute_hash(ht, bucket_iter->info->key)) {
+		list *new_node = list_create_node(key, value, ht->key_size, ht->data_size);
+		new_node->next = ht->buckets[hash];
+		ht->buckets[hash] = new_node;
+		return;
+	}
+	
+	while (bucket_iter->next) {
+		if (hash < ht_compute_hash(ht, bucket_iter->next->info->key))
+			break;
+
+		bucket_iter = bucket_iter->next;
+	}
+	
+	list *new_node = list_create_node(key, value, ht->key_size, ht->data_size);
+	new_node->next = bucket_iter->next;
+	bucket_iter->next = new_node;
 }
 
 void ht_delete_item(hashtable *ht, void *key)
@@ -77,6 +96,34 @@ dict_entry *ht_pop_hash_entry(hashtable *ht, unsigned int hash)
 	free(hash_node);
 
 	return entry;
+}
+
+/**
+ * @brief Alcatuieste o lista inlantuita cu perechile (cheie, valoare) care au
+ * hashul mai mic decat o valoare data, stergandu-le din hashtable.
+ *
+ * @return Inceputul listei simplu inlantuite cu perechi.
+ */
+list *ht_chain_entries(hashtable *ht, unsigned int max_hash)
+{
+	list *chain = NULL;
+	list *chain_tail = NULL;
+
+	for (unsigned int i = 0; i < ht->num_buckets; ++i) {
+		while (ht->buckets[i]) {
+			if (ht_compute_hash(ht, ht->buckets[i]->info->key) >= max_hash)
+				break;
+
+			chain_tail = ht->buckets[i];
+			ht->buckets[i] = ht->buckets[i]->next;
+
+			if (!chain)
+				chain = chain_tail;
+		}
+	}
+
+	chain_tail->next = NULL;
+	return chain;
 }
 
 void ht_destroy(hashtable *ht)
