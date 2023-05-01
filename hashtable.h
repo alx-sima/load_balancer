@@ -49,6 +49,8 @@ void ht_delete_item(hashtable *ht, void *key);
  */
 void *ht_get_item(hashtable *ht, void *key);
 
+void *ht_clone_val(hashtable *ht, void *key);
+
 /**
  * @brief Returneaza si sterge din dictionar prima pereche (cheie, valoare) cu
  * hashul dat.

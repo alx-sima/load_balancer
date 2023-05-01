@@ -8,7 +8,11 @@
 #include "utils.h"
 
 #define BUCKET_NO 123
+
+/** De cate ori e replicat fiecare server */
 #define REPLICA_NUM 3
+
+/** Pragul de umplere/golire la care se redimensioneaza hashringul */
 #define REALLOC_FACTOR 2
 
 struct server_entry {
@@ -109,7 +113,7 @@ void update_hashring_position(load_balancer *main, unsigned int old_pos,
 		labels_num = REPLICA_NUM;
 		labels = old_server_info->indexes;
 	} else {
-		/** Serverul nu este in baza de date, deci este o instanta a celui creat
+		/* Serverul nu este in baza de date, deci este o instanta a celui creat
 		 * acum, asa ca se schimba labelurile din `new_labels` */
 		labels_num = labels_no;
 		labels = new_labels->indexes;
@@ -123,7 +127,6 @@ void update_hashring_position(load_balancer *main, unsigned int old_pos,
 
 void loader_add_server(load_balancer *main, int server_id)
 {
-	// server_memory *new_server = init_server_memory();
 	struct server_info new_server_info = {
 		.server_addr = init_server_memory(),
 	};
@@ -154,9 +157,10 @@ void loader_add_server(load_balancer *main, int server_id)
 			update_hashring_position(main, j - 1, j, &new_server_info, i);
 		main->hashring[index] = new_label;
 
-		size_t next_server = (index + 1) % ++server_count;
+		size_t next_server_index = (index + 1) % ++server_count;
+		unsigned int next_server_id = main->hashring[next_server_index].id;
 		struct server_info *next_server_info =
-			ht_get_item(main->servers_info, &next_server);
+			ht_get_item(main->servers_info, &next_server_id);
 
 		/* Daca `main` era gol inaintea apelarii functiei, nu vor exista alte
 		 * servere, asa ca nu exista obiecte de transferat. */
@@ -172,51 +176,67 @@ void loader_add_server(load_balancer *main, int server_id)
 
 void loader_remove_server(load_balancer *main, int server_id)
 {
-	struct server_info *info = ht_get_item(main->servers_info, &server_id);
-	free_server_memory(info->server_addr);
+	struct server_info *info = ht_clone_val(main->servers_info, &server_id);
+	ht_delete_item(main->servers_info, &server_id);
 
-	for (int i = 0; i < REPLICA_NUM; ++i) {
-		int index = info->indexes[i];
-		for (size_t j = index + 1; j < main->hashring_size; ++j) 
-			update_hashring_position(main, j, j - 1, NULL, 0);
-		// TODO redistribuie itemele
-		--main->hashring_size;
+	for (int i = REPLICA_NUM; i > 0; --i) {
+		int index = info->indexes[i - 1];
+		unsigned int server_hash = main->hashring[index].hash;
+
+		for (size_t j = index + 1; j < main->hashring_size; ++j)
+			update_hashring_position(main, j, j - 1, info, i);
+
+		size_t next_server_index = index % main->hashring_size--;
+		unsigned int next_server_id = main->hashring[next_server_index].id;
+		struct server_info *next_server_info =
+			ht_get_item(main->servers_info, &next_server_id);
+		// if (!next_server_info) {
+		//  TODO
+		//	continue;
+		//}
+		transfer_items(next_server_info->server_addr, info->server_addr,
+					   server_hash);
 	}
+	free_server_memory(info->server_addr);
+	free(info);
 }
 
 void loader_store(load_balancer *main, char *key, char *value, int *server_id)
 {
 	unsigned int hash = hash_function_key(key);
 
+	/* Pentru ca hashringul este circular, daca nu se gaseste un hash mai mare,
+	 * obiectul va ajunge in primul server */
+	*server_id = 0;
+
 	// TODO: cautare binara
 	for (unsigned int i = 0; i < main->hashring_size; ++i) {
 		if (hash < main->hashring[i].hash) {
 			*server_id = main->hashring[i].id;
-			struct server_info *metadata =
-				ht_get_item(main->servers_info, server_id);
-			struct server_memory *addr = metadata->server_addr;
-			server_store(addr, key, value);
-			return;
+			break;
 		}
 	}
+	struct server_info *metadata = ht_get_item(main->servers_info, server_id);
+	struct server_memory *addr = metadata->server_addr;
+	server_store(addr, key, value);
 }
 
 char *loader_retrieve(load_balancer *main, char *key, int *server_id)
 {
 	unsigned int hash = hash_function_key(key);
 
+	*server_id = 0;
+
 	// TODO: cautare binara
 	for (unsigned int i = 0; i < main->hashring_size; ++i) {
 		if (hash < main->hashring[i].hash) {
 			*server_id = main->hashring[i].id;
-			struct server_info *metadata =
-				ht_get_item(main->servers_info, server_id);
-			struct server_memory *addr = metadata->server_addr;
-			return server_retrieve(addr, key);
+			break;
 		}
 	}
-
-	return NULL;
+	struct server_info *metadata = ht_get_item(main->servers_info, server_id);
+	struct server_memory *addr = metadata->server_addr;
+	return server_retrieve(addr, key);
 }
 
 void free_load_balancer(load_balancer *main)

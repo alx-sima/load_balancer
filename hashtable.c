@@ -52,9 +52,22 @@ void *ht_get_item(hashtable *ht, void *key)
 	return list_get_item(ht->buckets[hash], key, ht->key_size);
 }
 
+void *ht_clone_val(hashtable *ht, void *key)
+{
+	void *ref = ht_get_item(ht, key);
+	if (!ref)
+		return NULL;
+
+	void *clone = malloc(ht->data_size);
+	DIE(!clone, "failed malloc() of data");
+
+	memcpy(clone, ref, ht->data_size);
+	return clone;
+}
+
 dict_entry *ht_pop_hash_entry(hashtable *ht, unsigned int hash)
 {
-	list *hash_node = ht->buckets[hash];
+	list *hash_node = ht->buckets[hash % ht->num_buckets];
 	if (!hash_node)
 		return NULL;
 

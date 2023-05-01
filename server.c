@@ -54,6 +54,9 @@ void transfer_items(server_memory *dest, server_memory *src,
 		dict_entry *entry;
 		while ((entry = ht_pop_hash_entry(src->database, i))) {
 			ht_store_item(dest->database, entry->key, entry->data);
+			free(entry->key);
+			free(entry->data);
+			free(entry);
 		}
 	}
 }
