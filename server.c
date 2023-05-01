@@ -47,12 +47,12 @@ void free_server_memory(server_memory *server)
 }
 
 void transfer_items(server_memory *dest, server_memory *src,
-					unsigned int max_hash)
+				 unsigned int max_hash)
 {
-	for (unsigned int i = 0; i < max_hash && i < src->database->num_buckets;
-		 ++i) {
+	unsigned int buckets_left = src->database->num_buckets;
+	for (unsigned int hash = 0; hash < max_hash && buckets_left--; ++hash) {
 		dict_entry *entry;
-		while ((entry = ht_pop_hash_entry(src->database, i))) {
+		while ((entry = ht_pop_hash_entry(src->database, hash))) {
 			ht_store_item(dest->database, entry->key, entry->data);
 			free(entry->key);
 			free(entry->data);

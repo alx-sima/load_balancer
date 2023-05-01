@@ -86,6 +86,8 @@ size_t search_index(struct server_entry server, struct server_entry *array,
 
 		switch (compare_servers(server, array[index])) {
 		case LOWER:
+			if (!index)
+				return 0;
 			right = index - 1;
 			break;
 		case HIGHER:
@@ -197,8 +199,8 @@ void loader_remove_server(load_balancer *main, int server_id)
 		unsigned int next_server_id = main->hashring[next_server_index].id;
 		struct server_info *next_server_info =
 			ht_get_item(main->servers_info, &next_server_id);
-		 if (!next_server_info) {
-		 // TODO
+		if (!next_server_info) {
+			// TODO
 			continue;
 		}
 		transfer_items(next_server_info->server_addr, info->server_addr,
