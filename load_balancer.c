@@ -166,8 +166,8 @@ void loader_store(load_balancer *main, char *key, char *value, int *server_id)
 	// TODO
 	for (unsigned int i = 0; i < main->hashring_size; ++i) {
 		if (hash < main->hashring[i].hash) {
-			server_store(main->hashring[i].server, key, value);
 			*server_id = main->hashring[i].id;
+			server_store(main->hashring[i].server, key, value);
 			return;
 		}
 	}
@@ -175,10 +175,16 @@ void loader_store(load_balancer *main, char *key, char *value, int *server_id)
 
 char *loader_retrieve(load_balancer *main, char *key, int *server_id)
 {
-	/* TODO 5 */
-	(void)main;
-	(void)key;
-	(void)server_id;
+	unsigned int hash = hash_function_key(key);
+	
+	// TODO
+	for (unsigned int i = 0; i < main->hashring_size; ++i) {
+		if (hash < main->hashring[i].hash) {
+			*server_id = main->hashring[i].id;
+			return server_retrieve(main->hashring[i].server, key);
+		}
+	}
+
 	return NULL;
 }
 
