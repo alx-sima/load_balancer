@@ -20,5 +20,4 @@ unsigned int hash_function_servers(void *a);
 
 unsigned int hash_function_key(void *a);
 
-unsigned int hash_function_ptr(void *a);
 #endif /* UTILS_H_ */

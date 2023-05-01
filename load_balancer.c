@@ -11,26 +11,31 @@
 #define REPLICA_NUM 3
 #define REALLOC_FACTOR 2
 
-struct server {
+struct server_entry {
 	int id;
 	unsigned int hash;
 	unsigned int label;
-
-	server_memory *server;
 };
 
-struct server_metadata {
+struct server_info {
 	unsigned int indexes[REPLICA_NUM];
+	server_memory *server_addr;
 };
 
 struct load_balancer {
-	struct server *hashring;
+	struct server_entry *hashring;
 	size_t hashring_capacity;
+	/** Numarul de servere existente pe hashring. */
 	size_t hashring_size;
 
-	hashtable *server_metadatas;
+	/**
+	 * Un hashtable care tine mapari intre id-ul
+	 * unui server si informatii despre acesta.
+	 *
+	 * Maparea este de tipul: id -> server_info
+	 */
+	hashtable *servers_info;
 };
-
 
 load_balancer *init_load_balancer()
 {
@@ -39,12 +44,12 @@ load_balancer *init_load_balancer()
 
 	lb->hashring_capacity = REPLICA_NUM;
 	lb->hashring_size = 0;
-	lb->hashring = calloc(lb->hashring_capacity, sizeof(struct server));
+	lb->hashring = calloc(lb->hashring_capacity, sizeof(struct server_entry));
 	DIE(!lb->hashring, "failed malloc() of load_balancer.hashring");
 
-	lb->server_metadatas =
-		ht_create(BUCKET_NO, sizeof(struct server *),
-				  sizeof(struct server_metadata), hash_function_ptr);
+	lb->servers_info =
+		ht_create(BUCKET_NO, sizeof(unsigned int), sizeof(struct server_info),
+				  hash_function_servers);
 	return lb;
 }
 
@@ -54,7 +59,7 @@ enum order {
 	EQUAL,
 };
 
-enum order compare_servers(struct server a, struct server b)
+enum order compare_servers(struct server_entry a, struct server_entry b)
 {
 	if (a.hash != b.hash)
 		return a.hash < b.hash ? LOWER : HIGHER;
@@ -64,7 +69,8 @@ enum order compare_servers(struct server a, struct server b)
 	return EQUAL;
 }
 
-size_t search_index(struct server server, struct server *array, size_t len)
+size_t search_index(struct server_entry server, struct server_entry *array,
+					size_t len)
 {
 	size_t left = 0;
 	size_t right = len;
@@ -91,21 +97,24 @@ size_t search_index(struct server server, struct server *array, size_t len)
 
 void update_hashring_position(load_balancer *main, unsigned int old_pos,
 							  unsigned int new_pos,
-							  struct server_metadata *new_labels, int labels_no)
+							  struct server_info *new_labels, int labels_no)
 {
-	struct server_metadata *metadata =
-		ht_get_item(main->server_metadatas, &main->hashring[old_pos].server);
+	struct server_info *old_server_info =
+		ht_get_item(main->servers_info, &main->hashring[old_pos].id);
 	main->hashring[new_pos] = main->hashring[old_pos];
 
 	unsigned int *labels;
 	int labels_num;
-	if (metadata) {
+	if (old_server_info) {
 		labels_num = REPLICA_NUM;
-		labels = metadata->indexes;
+		labels = old_server_info->indexes;
 	} else {
+		/** Serverul nu este in baza de date, deci este o instanta a celui creat
+		 * acum, asa ca se schimba labelurile din `new_labels` */
 		labels_num = labels_no;
 		labels = new_labels->indexes;
 	}
+
 	for (int i = 0; i < labels_num; ++i) {
 		if (labels[i] == old_pos)
 			labels[i] = new_pos;
@@ -114,63 +123,64 @@ void update_hashring_position(load_balancer *main, unsigned int old_pos,
 
 void loader_add_server(load_balancer *main, int server_id)
 {
-	server_memory *new_server = init_server_memory();
+	// server_memory *new_server = init_server_memory();
+	struct server_info new_server_info = {
+		.server_addr = init_server_memory(),
+	};
 
 	size_t server_count = main->hashring_size;
 	main->hashring_size += REPLICA_NUM;
 	if (main->hashring_size > main->hashring_capacity) {
 		main->hashring_capacity *= REALLOC_FACTOR;
-		main->hashring = realloc(main->hashring, sizeof(struct server) *
+		main->hashring = realloc(main->hashring, sizeof(struct server_entry) *
 													 main->hashring_capacity);
 		DIE(!main->hashring, "failed realloc() of load_balancer.hashring");
+		// TODO: S-ar putea sa nu fie necesar
 		memset(main->hashring + main->hashring_size, 0,
 			   main->hashring_capacity - main->hashring_size);
 	}
-	struct server_metadata new_metadata;
 	for (int i = 0; i < REPLICA_NUM; ++i) {
 		int label = i * 1e5 + server_id;
 		unsigned int hash = hash_function_servers(&label);
 
-		struct server new_label = {
+		struct server_entry new_label = {
 			.id = server_id,
 			.hash = hash,
 			.label = label,
-			.server = new_server,
 		};
 
 		size_t index = search_index(new_label, main->hashring, server_count);
 		for (size_t j = server_count; j > index; --j)
-			update_hashring_position(main, j - 1, j, &new_metadata, i);
+			update_hashring_position(main, j - 1, j, &new_server_info, i);
 		main->hashring[index] = new_label;
 
 		size_t next_server = (index + 1) % ++server_count;
-		transfer_items(main->hashring[index].server,
-					   main->hashring[next_server].server,
-					   main->hashring[index].hash);
-		new_metadata.indexes[i] = index;
+		struct server_info *next_server_info =
+			ht_get_item(main->servers_info, &next_server);
+
+		/* Daca `main` era gol inaintea apelarii functiei, nu vor exista alte
+		 * servere, asa ca nu exista obiecte de transferat. */
+		if (next_server_info) {
+			transfer_items(new_server_info.server_addr,
+						   next_server_info->server_addr, hash);
+		}
+		new_server_info.indexes[i] = index;
 	}
-	ht_store_item(main->server_metadatas, &new_server, &new_metadata);
+
+	ht_store_item(main->servers_info, &server_id, &new_server_info);
 }
 
 void loader_remove_server(load_balancer *main, int server_id)
 {
-	// FIXME hashmapul sa retina serverul dupa label, nu pointer.
-	for (unsigned int i = 0; i < main->hashring_size; ++i) {
-		struct server server_info = main->hashring[i];
-		if (server_info.id != server_id)
-			continue;
+	struct server_info *info = ht_get_item(main->servers_info, &server_id);
+	free_server_memory(info->server_addr);
 
-		struct server_metadata *metadata = ht_get_item(main->server_metadatas, &server_info.server);
-		unsigned int *labels = metadata->indexes;
-		for (int i = 0; i < REPLICA_NUM; ++i) {
-			int index = labels[i];
-			for (size_t j = index + 1; j < main->hashring_size; ++j) {
-				update_hashring_position(main, j, j - 1, NULL, 0);
-			}
-			--main->hashring_size;
-		}
-		free_server_memory(server_info.server);
-		return;
+	for (int i = 0; i < REPLICA_NUM; ++i) {
+		int index = info->indexes[i];
+		for (size_t j = index + 1; j < main->hashring_size; ++j) 
+			update_hashring_position(main, j, j - 1, NULL, 0);
+		// TODO redistribuie itemele
+		--main->hashring_size;
 	}
 }
 
@@ -178,11 +188,14 @@ void loader_store(load_balancer *main, char *key, char *value, int *server_id)
 {
 	unsigned int hash = hash_function_key(key);
 
-	// TODO
+	// TODO: cautare binara
 	for (unsigned int i = 0; i < main->hashring_size; ++i) {
 		if (hash < main->hashring[i].hash) {
 			*server_id = main->hashring[i].id;
-			server_store(main->hashring[i].server, key, value);
+			struct server_info *metadata =
+				ht_get_item(main->servers_info, server_id);
+			struct server_memory *addr = metadata->server_addr;
+			server_store(addr, key, value);
 			return;
 		}
 	}
@@ -191,12 +204,15 @@ void loader_store(load_balancer *main, char *key, char *value, int *server_id)
 char *loader_retrieve(load_balancer *main, char *key, int *server_id)
 {
 	unsigned int hash = hash_function_key(key);
-	
-	// TODO
+
+	// TODO: cautare binara
 	for (unsigned int i = 0; i < main->hashring_size; ++i) {
 		if (hash < main->hashring[i].hash) {
 			*server_id = main->hashring[i].id;
-			return server_retrieve(main->hashring[i].server, key);
+			struct server_info *metadata =
+				ht_get_item(main->servers_info, server_id);
+			struct server_memory *addr = metadata->server_addr;
+			return server_retrieve(addr, key);
 		}
 	}
 
@@ -212,21 +228,21 @@ void free_load_balancer(load_balancer *main)
 		if (deleted_servers[i])
 			continue;
 
-		server_memory *server_ptr = main->hashring[i].server;
-		struct server_metadata *metadata =
-			ht_get_item(main->server_metadatas, &server_ptr);
-		unsigned int *labels = metadata->indexes;
+		int id = main->hashring[i].id;
+		const struct server_info *metadata =
+			ht_get_item(main->servers_info, &id);
+		const unsigned int *labels = metadata->indexes;
 
 		/* Marcheaza toate instantele serverului ca fiind sterse. */
 		for (int j = 0; j < REPLICA_NUM; ++j)
 			deleted_servers[labels[j]] = 1;
 
-		free_server_memory(server_ptr);
+		free_server_memory(metadata->server_addr);
 	}
 
 	free(deleted_servers);
 
-	ht_destroy(main->server_metadatas);
+	ht_destroy(main->servers_info);
 	free(main->hashring);
 	free(main);
 }

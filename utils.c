@@ -22,10 +22,3 @@ unsigned int hash_function_key(void *a)
 
 	return hash;
 }
-
-unsigned int hash_function_ptr(void *a)
-{
-	void *ptr = *((void **)a);
-	// TODO
-	return (unsigned int)ptr;
-}

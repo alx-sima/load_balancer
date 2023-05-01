@@ -65,7 +65,7 @@ static list *list_create_node(void *key, void *value, size_t key_size,
 	DIE(!node, "failed malloc() of list");
 
 	node->info = malloc(sizeof(dict_entry));
-	DIE(!node->info, "failed malloc() of list.info"); 
+	DIE(!node->info, "failed malloc() of list.info");
 
 	node->info->key = malloc(key_size);
 	DIE(!node->info->key, "failed malloc() of list.info.key");
