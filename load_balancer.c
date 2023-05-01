@@ -70,7 +70,7 @@ load_balancer *init_load_balancer()
 	DIE(!lb->hashring, ""); // TODO
 
 	lb->server_metadatas =
-		create_ht(BUCKET_NO, sizeof(struct server *),
+		ht_create(BUCKET_NO, sizeof(struct server *),
 				  sizeof(struct server_metadata), hash_function_ptr);
 	return lb;
 }
@@ -121,7 +121,7 @@ void update_hashring_position(load_balancer *main, unsigned int old_pos,
 							  struct server_metadata *new_labels, int labels_no)
 {
 	struct server_metadata *metadata =
-		get_item_ht(main->server_metadatas, &main->hashring[old_pos].server);
+		ht_get_item(main->server_metadatas, &main->hashring[old_pos].server);
 	main->hashring[new_pos] = main->hashring[old_pos];
 
 	unsigned int *labels;
@@ -175,7 +175,7 @@ void loader_add_server(load_balancer *main, int server_id)
 					   main->hashring[index].hash);
 		new_metadata.indexes[i] = index;
 	}
-	insert_item_ht(main->server_metadatas, &new_server, &new_metadata);
+	ht_store_item(main->server_metadatas, &new_server, &new_metadata);
 }
 
 void loader_remove_server(load_balancer *main, int server_id)
@@ -214,8 +214,9 @@ void free_load_balancer(load_balancer *main)
 
 		server_memory *server_ptr = main->hashring[i].server;
 		struct server_metadata *metadata =
-			get_item_ht(main->server_metadatas, &server_ptr);
+			ht_get_item(main->server_metadatas, &server_ptr);
 		unsigned int *labels = metadata->indexes;
+
 		/* Marcheaza toate instantele serverului ca fiind sterse. */
 		for (int j = 0; j < REPLICA_NUM; ++j)
 			deleted_servers[labels[j]] = 1;
@@ -225,7 +226,7 @@ void free_load_balancer(load_balancer *main)
 
 	free(deleted_servers);
 
-	delete_ht(main->server_metadatas);
+	ht_destroy(main->server_metadatas);
 	free(main->hashring);
 	free(main);
 }

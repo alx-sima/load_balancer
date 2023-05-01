@@ -13,11 +13,12 @@ typedef struct list {
 	struct list *next;
 } list;
 
-void insert_item_list(list **l, void *key, void *value, size_t key_size,
-					  size_t data_size);
-list *pop_item_list(list **l, void *key, size_t key_size);
+void list_push_item(list **l, void *key, void *value, size_t key_size,
+					size_t data_size);
 
-void *get_item_list(list *l, void *key, size_t key_size);
+list *list_pop_item(list **l, void *key, size_t key_size);
 
-void delete_list(list *l);
+void *list_get_item(list *l, void *key, size_t key_size);
+
+void list_destroy(list *l);
 #endif /* LIST_H_ */

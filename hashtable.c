@@ -6,7 +6,7 @@
 #include "list.h"
 #include "utils.h"
 
-hashtable *create_ht(unsigned int num_buckets, size_t key_size,
+hashtable *ht_create(unsigned int num_buckets, size_t key_size,
 					 size_t data_size, unsigned int (*hash_func)(void *))
 {
 	hashtable *ht = malloc(sizeof(hashtable));
@@ -24,17 +24,21 @@ hashtable *create_ht(unsigned int num_buckets, size_t key_size,
 	return ht;
 }
 
-void insert_item_ht(hashtable *ht, void *key, void *value)
+unsigned int ht_compute_hash(hashtable *ht, void *key)
 {
-	unsigned int hash = ht->hash_func(key) % ht->num_buckets;
-	insert_item_list(&ht->buckets[hash], key, value, ht->key_size,
-					 ht->data_size);
+	return ht->hash_func(key) % ht->num_buckets;
 }
 
-void remove_item_ht(hashtable *ht, void *key)
+void ht_store_item(hashtable *ht, void *key, void *value)
 {
-	unsigned int hash = ht->hash_func(key) % ht->num_buckets;
-	list *item_node = pop_item_list(&ht->buckets[hash], key, ht->key_size);
+	unsigned int hash = ht_compute_hash(ht, key);
+	list_push_item(&ht->buckets[hash], key, value, ht->key_size, ht->data_size);
+}
+
+void ht_delete_item(hashtable *ht, void *key)
+{
+	unsigned int hash = ht_compute_hash(ht, key);
+	list *item_node = list_pop_item(&ht->buckets[hash], key, ht->key_size);
 
 	free(item_node->info->key);
 	free(item_node->info->data);
@@ -42,13 +46,13 @@ void remove_item_ht(hashtable *ht, void *key)
 	free(item_node);
 }
 
-void *get_item_ht(hashtable *ht, void *key)
+void *ht_get_item(hashtable *ht, void *key)
 {
-	unsigned int hash = ht->hash_func(key) % ht->num_buckets;
-	return get_item_list(ht->buckets[hash], key, ht->key_size);
+	unsigned int hash = ht_compute_hash(ht, key);
+	return list_get_item(ht->buckets[hash], key, ht->key_size);
 }
 
-dict_entry *pop_hash_entry(hashtable *ht, unsigned int hash)
+dict_entry *ht_pop_hash_entry(hashtable *ht, unsigned int hash)
 {
 	list *hash_node = ht->buckets[hash];
 	if (!hash_node)
@@ -62,24 +66,10 @@ dict_entry *pop_hash_entry(hashtable *ht, unsigned int hash)
 	return entry;
 }
 
-void delete_ht(hashtable *ht)
+void ht_destroy(hashtable *ht)
 {
 	for (unsigned int i = 0; i < ht->num_buckets; ++i)
-		delete_list(ht->buckets[i]);
+		list_destroy(ht->buckets[i]);
 	free(ht->buckets);
 	free(ht);
-}
-
-void debug_print_everything_ht(hashtable *ht)
-{
-	fprintf(stderr, "printing every entry");
-	for (unsigned int i = 0; i < ht->num_buckets; ++i) {
-		fprintf(stderr, "hash %u: ", i);
-
-		dict_entry *entry;
-		while ((entry = pop_hash_entry(ht, i))) {
-			fprintf(stderr, "(key: %p, val: %p), ", entry->key, entry->data);
-		}
-		fprintf(stderr, "\n");
-	}
 }

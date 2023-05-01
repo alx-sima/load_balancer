@@ -19,29 +19,29 @@ server_memory *init_server_memory()
 	struct server_memory *server = malloc(sizeof(struct server_memory));
 	DIE(!server, "failed server malloc()\n");
 
-	server->database = create_ht(10, KEY_LENGTH, VALUE_LENGTH, NULL);
+	server->database = ht_create(10, KEY_LENGTH, VALUE_LENGTH, NULL);
 	DIE(!server->database, "failed server database malloc()\n");
 	return server;
 }
 
 void server_store(server_memory *server, char *key, char *value)
 {
-	insert_item_ht(server->database, key, value);
+	ht_store_item(server->database, key, value);
 }
 
 char *server_retrieve(server_memory *server, char *key)
 {
-	return get_item_ht(server->database, key);
+	return ht_get_item(server->database, key);
 }
 
 void server_remove(server_memory *server, char *key)
 {
-	remove_item_ht(server->database, key);
+	ht_delete_item(server->database, key);
 }
 
 void free_server_memory(server_memory *server)
 {
-	delete_ht(server->database);
+	ht_destroy(server->database);
 	free(server);
 }
 
@@ -51,8 +51,8 @@ void transfer_items(server_memory *dest, server_memory *src,
 	for (unsigned int i = 0; i < max_hash && i < src->database->num_buckets;
 		 ++i) {
 		dict_entry *entry;
-		while ((entry = pop_hash_entry(src->database, i))) {
-			insert_item_ht(dest->database, entry->key, entry->data);
+		while ((entry = ht_pop_hash_entry(src->database, i))) {
+			ht_store_item(dest->database, entry->key, entry->data);
 		}
 	}
 }
