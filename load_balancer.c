@@ -12,8 +12,9 @@
 #define REALLOC_FACTOR 2
 
 struct server {
+	unsigned int id;
 	unsigned int hash;
-	int label;
+	unsigned int label;
 
 	server_memory *server;
 };
@@ -30,34 +31,6 @@ struct load_balancer {
 	hashtable *server_metadatas;
 };
 
-unsigned int hash_function_servers(void *a)
-{
-	unsigned int uint_a = *((unsigned int *)a);
-
-	uint_a = ((uint_a >> 16u) ^ uint_a) * 0x45d9f3b;
-	uint_a = ((uint_a >> 16u) ^ uint_a) * 0x45d9f3b;
-	uint_a = (uint_a >> 16u) ^ uint_a;
-	return uint_a;
-}
-
-unsigned int hash_function_key(void *a)
-{
-	unsigned char *puchar_a = (unsigned char *)a;
-	unsigned int hash = 5381;
-	int c;
-
-	while ((c = *puchar_a++))
-		hash = ((hash << 5u) + hash) + c;
-
-	return hash;
-}
-
-unsigned int hash_function_ptr(void *a)
-{
-	void *ptr = *((void **)a);
-	// TODO
-	return (unsigned int)ptr;
-}
 
 load_balancer *init_load_balancer()
 {
@@ -159,6 +132,7 @@ void loader_add_server(load_balancer *main, int server_id)
 		unsigned int hash = hash_function_servers(&label);
 
 		struct server new_label = {
+			.id = server_id,
 			.hash = hash,
 			.label = label,
 			.server = new_server,
@@ -187,11 +161,16 @@ void loader_remove_server(load_balancer *main, int server_id)
 
 void loader_store(load_balancer *main, char *key, char *value, int *server_id)
 {
-	/* TODO 4 */
-	(void)main;
-	(void)key;
-	(void)value;
-	(void)server_id;
+	unsigned int hash = hash_function_key(key);
+
+	// TODO
+	for (unsigned int i = 0; i < main->hashring_size; ++i) {
+		if (hash < main->hashring[i].hash) {
+			server_store(main->hashring[i].server, key, value);
+			*server_id = main->hashring[i].id;
+			return;
+		}
+	}
 }
 
 char *loader_retrieve(load_balancer *main, char *key, int *server_id)

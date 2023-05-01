@@ -19,7 +19,7 @@ server_memory *init_server_memory()
 	struct server_memory *server = malloc(sizeof(struct server_memory));
 	DIE(!server, "failed malloc() of server_memory");
 
-	server->database = ht_create(10, KEY_LENGTH, VALUE_LENGTH, NULL);
+	server->database = ht_create(10, KEY_LENGTH, VALUE_LENGTH, hash_function_key);
 	DIE(!server->database, "failed malloc() of server_memory.database");
 	return server;
 }

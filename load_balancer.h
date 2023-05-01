@@ -1,4 +1,4 @@
-/* Copyright 2023 <> */
+/* Copyright 2023 Sima Alexandru (312CA) */
 #ifndef LOAD_BALANCER_H_
 #define LOAD_BALANCER_H_
 
