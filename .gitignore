@@ -7,6 +7,7 @@ out/
 ref/
 
 # Build artifacts
+/doc/
 .gdb_history
 tags
 tema2
