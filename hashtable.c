@@ -10,11 +10,11 @@ hashtable *ht_create(unsigned int num_buckets, size_t key_size,
 					 size_t data_size, unsigned int (*hash_func)(void *))
 {
 	hashtable *ht = malloc(sizeof(hashtable));
-	DIE(!ht, ""); // TODO
+	DIE(!ht, "failed malloc() of hashtable");
 
 	ht->num_buckets = num_buckets;
 	ht->buckets = calloc(num_buckets, sizeof(list *));
-	DIE(!ht->buckets, ""); // TODO
+	DIE(!ht->buckets, "failed malloc() of hashtable.buckets");
 
 	ht->key_size = key_size;
 	ht->data_size = data_size;

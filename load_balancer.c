@@ -62,12 +62,12 @@ unsigned int hash_function_ptr(void *a)
 load_balancer *init_load_balancer()
 {
 	load_balancer *lb = malloc(sizeof(load_balancer));
-	DIE(!lb, ""); // TODO
+	DIE(!lb, "failed malloc() of load_balancer");
 
 	lb->hashring_capacity = REPLICA_NUM;
 	lb->hashring_size = 0;
 	lb->hashring = calloc(lb->hashring_capacity, sizeof(struct server));
-	DIE(!lb->hashring, ""); // TODO
+	DIE(!lb->hashring, "failed malloc() of load_balancer.hashring");
 
 	lb->server_metadatas =
 		ht_create(BUCKET_NO, sizeof(struct server *),
@@ -149,7 +149,7 @@ void loader_add_server(load_balancer *main, int server_id)
 		main->hashring_capacity *= REALLOC_FACTOR;
 		main->hashring = realloc(main->hashring, sizeof(struct server) *
 													 main->hashring_capacity);
-		DIE(!main->hashring, ""); // TODO
+		DIE(!main->hashring, "failed realloc() of load_balancer.hashring");
 		memset(main->hashring + main->hashring_size, 0,
 			   main->hashring_capacity - main->hashring_size);
 	}
