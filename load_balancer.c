@@ -12,7 +12,7 @@
 #define REALLOC_FACTOR 2
 
 struct server {
-	unsigned int id;
+	int id;
 	unsigned int hash;
 	unsigned int label;
 
@@ -154,9 +154,24 @@ void loader_add_server(load_balancer *main, int server_id)
 
 void loader_remove_server(load_balancer *main, int server_id)
 {
-	/* TODO 3 */
-	(void)main;
-	(void)server_id;
+	// FIXME hashmapul sa retina serverul dupa label, nu pointer.
+	for (unsigned int i = 0; i < main->hashring_size; ++i) {
+		struct server server_info = main->hashring[i];
+		if (server_info.id != server_id)
+			continue;
+
+		struct server_metadata *metadata = ht_get_item(main->server_metadatas, &server_info.server);
+		unsigned int *labels = metadata->indexes;
+		for (int i = 0; i < REPLICA_NUM; ++i) {
+			int index = labels[i];
+			for (size_t j = index + 1; j < main->hashring_size; ++j) {
+				update_hashring_position(main, j, j - 1, NULL, 0);
+			}
+			--main->hashring_size;
+		}
+		free_server_memory(server_info.server);
+		return;
+	}
 }
 
 void loader_store(load_balancer *main, char *key, char *value, int *server_id)
