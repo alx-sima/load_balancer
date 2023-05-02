@@ -3,6 +3,8 @@ CC=gcc
 CFLAGS=-std=c99 -Wall -Wextra -g
 
 TARGET=tema2
+
+HEADERS=$(wildcard *.h)
 SRC=$(wildcard *.c)
 OBJ=$(SRC:%.c=%.o)
 DEP=$(OBJ:%.o=%.d)
@@ -25,8 +27,9 @@ $(TARGET): $(OBJ)
 
 -include $(DEP)
 
-pack:
+pack: README.md Makefile $(SRC) $(HEADERS)
+	zip -FSr $(TARGET).zip $@
 
 clean:
-	rm -f $(TARGET) vgcore.* *.o *.d *.h.gch
+	rm -f $(TARGET) $(TARGET).zip vgcore.* *.o *.d *.h.gch
 
