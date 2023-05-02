@@ -47,11 +47,10 @@ void free_server_memory(server_memory *server)
 	free(server);
 }
 
-list *server_pop_entry(server_memory *s) {
+list *server_pop_entry(server_memory *s)
+{
 	return ht_pop_entry(s->database);
 }
-
-
 
 void transfer_items(server_memory *dest, server_memory *src,
 					unsigned int max_hash)

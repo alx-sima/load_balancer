@@ -52,7 +52,7 @@ char *server_retrieve(server_memory *server, char *key);
 
 /* TODO */
 #include "list.h"
-list* server_pop_entry(server_memory *s);
+list *server_pop_entry(server_memory *s);
 
 void transfer_items(server_memory *dest, server_memory *src,
 					unsigned int max_hash);

@@ -98,7 +98,7 @@ void *ht_clone_val(hashtable *ht, void *key)
  */
 list *ht_pop_entry(hashtable *ht)
 {
-	for (int i = 0; i <  ht->num_buckets; ++i) {
+	for (size_t i = 0; i < ht->num_buckets; ++i) {
 		if (ht->buckets[i]) {
 			list *found_node = ht->buckets[i];
 			ht->buckets[i] = ht->buckets[i]->next;
