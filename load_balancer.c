@@ -149,9 +149,6 @@ void loader_add_server(load_balancer *main, int server_id)
 		main->hashring = realloc(main->hashring, sizeof(struct server_entry) *
 													 main->hashring_capacity);
 		DIE(!main->hashring, "failed realloc() of load_balancer.hashring");
-		// TODO: S-ar putea sa nu fie necesar
-		memset(main->hashring + main->hashring_size, 0,
-			   main->hashring_capacity - main->hashring_size);
 	}
 	for (int i = 0; i < REPLICA_NUM; ++i) {
 		int label = i * 1e5 + server_id;
