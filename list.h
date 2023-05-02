@@ -14,7 +14,7 @@ typedef struct list {
 } list;
 
 list *list_create_node(void *key, void *value, size_t key_size,
-							  size_t data_size);
+					   size_t data_size);
 void list_push_item(list **l, void *key, void *value, size_t key_size,
 					size_t data_size);
 

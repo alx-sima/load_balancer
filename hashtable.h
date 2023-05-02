@@ -52,6 +52,14 @@ void *ht_get_item(hashtable *ht, void *key);
 void *ht_clone_val(hashtable *ht, void *key);
 
 /**
+ * @brief Alcatuieste o lista inlantuita cu perechile (cheie, valoare) care au
+ * hashul mai mic decat o valoare data, stergandu-le din hashtable.
+ *
+ * @return Inceputul listei simplu inlantuite cu perechi.
+ */
+list *ht_chain_entries(hashtable *ht, unsigned int max_hash);
+
+/**
  * @brief Returneaza si sterge din dictionar prima pereche (cheie, valoare) cu
  * hashul dat.
  *

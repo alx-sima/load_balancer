@@ -6,7 +6,6 @@
 
 static void list_delete_node(list *l);
 
-
 list *list_pop_item(list **l, void *key, size_t key_size)
 {
 	list *prev = NULL;
@@ -49,7 +48,7 @@ void list_destroy(list *l)
 }
 
 list *list_create_node(void *key, void *value, size_t key_size,
-							  size_t data_size)
+					   size_t data_size)
 {
 	list *node = malloc(sizeof(list));
 	DIE(!node, "failed malloc() of list");

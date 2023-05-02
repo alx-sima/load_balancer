@@ -7,6 +7,7 @@
 #include "utils.h"
 
 // FIXME
+#define BUCKET_NO 10
 #define KEY_LENGTH 128
 #define VALUE_LENGTH 65536
 
@@ -20,7 +21,7 @@ server_memory *init_server_memory()
 	DIE(!server, "failed malloc() of server_memory");
 
 	server->database =
-		ht_create(10, KEY_LENGTH, VALUE_LENGTH, hash_function_key);
+		ht_create(BUCKET_NO, KEY_LENGTH, VALUE_LENGTH, hash_function_key);
 	DIE(!server->database, "failed malloc() of server_memory.database");
 	return server;
 }
@@ -49,14 +50,16 @@ void free_server_memory(server_memory *server)
 void transfer_items(server_memory *dest, server_memory *src,
 					unsigned int max_hash)
 {
-	unsigned int buckets_left = src->database->num_buckets;
-	for (unsigned int hash = 0; hash < max_hash && buckets_left--; ++hash) {
-		dict_entry *entry;
-		while ((entry = ht_pop_hash_entry(src->database, hash))) {
-			ht_store_item(dest->database, entry->key, entry->data);
-			free(entry->key);
-			free(entry->data);
-			free(entry);
-		}
+	list *chain = ht_chain_entries(src->database, max_hash);
+	while (chain) {
+		ht_store_item(dest->database, chain->info->key, chain->info->data);
+		list *old_chain = chain;
+		chain = chain->next;
+
+		free(old_chain->info->data);
+		free(old_chain->info->key);
+		free(old_chain->info);
+		free(old_chain);
 	}
+	return;
 }
