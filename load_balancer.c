@@ -217,53 +217,52 @@ void loader_remove_server(load_balancer *main, int server_id)
 	free(info);
 }
 
+struct server_entry *containing_server(struct server_entry *hashring,
+									   size_t hashring_size,
+									   unsigned int target_hash)
+{
+	for (unsigned int i = 0; i < hashring_size; ++i) {
+		if (target_hash < hashring[i].hash)
+			return &hashring[i];
+	}
+
+	/* Pentru ca hashringul este circular, daca nu se gaseste un server cu un
+	 * hash mai mare, obiectul va ajunge in primul server */
+	return &hashring[0];
+}
+
 void loader_store(load_balancer *main, char *key, char *value, int *server_id)
 {
 	unsigned int hash = hash_function_key(key);
 
-	/* Pentru ca hashringul este circular, daca nu se gaseste un hash mai mare,
-	 * obiectul va ajunge in primul server */
-	*server_id = main->hashring[0].id;
-
-	// TODO: cautare binara
-	for (unsigned int i = 0; i < main->hashring_size; ++i) {
-		if (hash < main->hashring[i].hash) {
-			*server_id = main->hashring[i].id;
-			break;
-		}
-	}
-	struct server_info *metadata = ht_get_item(main->servers_info, server_id);
-	struct server_memory *addr = metadata->server_addr;
-	server_store(addr, key, value);
+	struct server_entry *server =
+		containing_server(main->hashring, main->hashring_size, hash);
+	*server_id = server->id;
+	server_store(server->server, key, value);
 }
 
 char *loader_retrieve(load_balancer *main, char *key, int *server_id)
 {
 	unsigned int hash = hash_function_key(key);
 
-	*server_id = main->hashring[0].id;
-
-	// TODO: cautare binara
-	for (unsigned int i = 0; i < main->hashring_size; ++i) {
-		if (hash < main->hashring[i].hash) {
-			*server_id = main->hashring[i].id;
-			break;
-		}
-	}
-	struct server_info *metadata = ht_get_item(main->servers_info, server_id);
-	struct server_memory *addr = metadata->server_addr;
-	return server_retrieve(addr, key);
+	struct server_entry *server =
+		containing_server(main->hashring, main->hashring_size, hash);
+	*server_id = server->id;
+	return server_retrieve(server->server, key);
 }
 
 /**
  * @brief Cauta in `hashring` o instanta de server cu un anumit hash.
+ * @todo Se poate optimiza la cautare binara.
  *
  * @param hashring_size Dimensiunea hashringului
  * @param target_hash Hashul cautat
  * @return O referinta la instanta de server
  * @return NULL daca serverul nu exista
  */
-struct server_entry *find_server(struct server_entry *hashring, size_t hashring_size, unsigned int target_hash) {
+struct server_entry *find_server(struct server_entry *hashring,
+								 size_t hashring_size, unsigned int target_hash)
+{
 	for (size_t i = 0; i < hashring_size; ++i) {
 		if (hashring[i].hash == target_hash)
 			return &hashring[i];
@@ -292,7 +291,9 @@ void free_load_balancer(load_balancer *main)
 			struct server_entry *replica =
 				find_server(main->hashring, main->hashring_size, replica_hash);
 			DIE(!replica, "this shouldn't have happened");
-			fprintf(stderr, "index %lu, replica %d, replica_index %lu: ptr %p\n", i, j, replica - main->hashring, replica->server);
+			fprintf(stderr,
+					"index %lu, replica %d, replica_index %lu: ptr %p\n", i, j,
+					replica - main->hashring, replica->server);
 
 			replica->server = NULL;
 		}
