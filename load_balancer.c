@@ -19,6 +19,8 @@ struct server_entry {
 	int id;
 	unsigned int hash;
 	unsigned int label;
+
+	server_memory *server;
 };
 
 struct server_info {
@@ -33,6 +35,7 @@ struct load_balancer {
 	size_t hashring_size;
 
 	/**
+	 * !!! DEPRECATED !!!
 	 * Un hashtable care tine mapari intre id-ul
 	 * unui server si informatii despre acesta.
 	 *
@@ -73,6 +76,9 @@ enum order compare_servers(struct server_entry a, struct server_entry b)
 	return EQUAL;
 }
 
+/**
+ * DEPRECATED: linear search pana iese tema, optimizari dupa
+ */
 size_t search_index(struct server_entry server, struct server_entry *array,
 					size_t len)
 {
@@ -155,6 +161,7 @@ void loader_add_server(load_balancer *main, int server_id)
 			.id = server_id,
 			.hash = hash,
 			.label = label,
+			.server = new_server_info.server_addr,
 		};
 
 		size_t index = search_index(new_label, main->hashring, server_count);
@@ -248,30 +255,48 @@ char *loader_retrieve(load_balancer *main, char *key, int *server_id)
 	return server_retrieve(addr, key);
 }
 
-void free_load_balancer(load_balancer *main)
-{
-	/* Vector de frecventa in care se retine daca s-a sters serverul deja. */
-	char *deleted_servers = calloc(main->hashring_size, sizeof(char));
-
-	for (size_t i = 0; i < main->hashring_size; ++i) {
-		if (deleted_servers[i])
-			continue;
-
-		int id = main->hashring[i].id;
-		const struct server_info *metadata =
-			ht_get_item(main->servers_info, &id);
-		const unsigned int *labels = metadata->indexes;
-
-		/* Marcheaza toate instantele serverului ca fiind sterse. */
-		for (int j = 0; j < REPLICA_NUM; ++j)
-			deleted_servers[labels[j]] = 1;
-
-		free_server_memory(metadata->server_addr);
+/**
+ * @brief Cauta in hashring o instanta de server cu hash-ul @param target_hash.
+ *
+ * @returns O referinta la instanta de server.
+ * @returns NULL daca serverul nu exista.
+ */
+struct server_entry *find_server(struct server_entry *hashring, size_t hashring_size, unsigned int target_hash) {
+	for (size_t i = 0; i < hashring_size; ++i) {
+		if (hashring[i].hash == target_hash)
+			return &hashring[i];
 	}
 
-	free(deleted_servers);
+	return NULL;
+}
 
-	ht_destroy(main->servers_info);
+void free_load_balancer(load_balancer *main)
+{
+	for (size_t i = 0; i < main->hashring_size; ++i) {
+		struct server_entry *curr_entry = &main->hashring[i];
+		fprintf(stderr, "index %lu: ptr %p\n", i, curr_entry->server);
+		/* Serverul a fost deja sters */
+		if (!curr_entry->server)
+			continue;
+
+		free_server_memory(curr_entry->server);
+		curr_entry->server = NULL;
+
+		/* Seteaza si celelalte replici ca fiind sterse */
+		for (int j = 0; j < REPLICA_NUM; ++j) {
+			int replica_label = j * 1e5 + curr_entry->id;
+			unsigned int replica_hash = hash_function_servers(&replica_label);
+
+			struct server_entry *replica =
+				find_server(main->hashring, main->hashring_size, replica_hash);
+			DIE(!replica, "this shouldn't have happened");
+			fprintf(stderr, "index %lu, replica %d, replica_index %lu: ptr %p\n", i, j, replica - main->hashring, replica->server);
+
+			replica->server = NULL;
+		}
+	}
+
+	ht_destroy(main->servers_info); /* TODO: temporary fix */
 	free(main->hashring);
 	free(main);
 }
