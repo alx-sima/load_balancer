@@ -35,7 +35,7 @@ void ht_store_item(hashtable *ht, void *key, void *value)
 	list *bucket_iter = ht->buckets[hash];
 
 	/* Nodul se insereaza la inceputul listei */
-	if (!bucket_iter || hash < ht_compute_hash(ht, bucket_iter->info->key)) {
+	if (!bucket_iter || hash < ht_compute_hash(ht, bucket_iter->info.key)) {
 		list *new_node =
 			list_create_node(key, value, ht->key_size, ht->data_size);
 		new_node->next = ht->buckets[hash];
@@ -44,7 +44,7 @@ void ht_store_item(hashtable *ht, void *key, void *value)
 	}
 
 	while (bucket_iter->next) {
-		if (hash < ht_compute_hash(ht, bucket_iter->next->info->key))
+		if (hash < ht_compute_hash(ht, bucket_iter->next->info.key))
 			break;
 
 		bucket_iter = bucket_iter->next;
@@ -60,9 +60,8 @@ void ht_delete_item(hashtable *ht, void *key)
 	unsigned int hash = ht_compute_hash(ht, key);
 	list *item_node = list_pop_item(&ht->buckets[hash], key, ht->key_size);
 
-	free(item_node->info->key);
-	free(item_node->info->data);
-	free(item_node->info);
+	free(item_node->info.key);
+	free(item_node->info.data);
 	free(item_node);
 }
 
@@ -115,28 +114,14 @@ void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int max_hash)
 {
 	for (size_t i = 0; i < src->num_buckets; ++i) {
 		while (src->buckets[i]) {
-			unsigned int hash = hash_function_key(src->buckets[i]->info->key);
+			unsigned int hash = hash_function_key(src->buckets[i]->info.key);
 			if (hash < max_hash) {
-				ht_store_item(dest, src->buckets[i]->info->key,
-							  src->buckets[i]->info->data);
-				ht_delete_item(src, src->buckets[i]->info->key);
+				ht_store_item(dest, src->buckets[i]->info.key,
+							  src->buckets[i]->info.data);
+				ht_delete_item(src, src->buckets[i]->info.key);
 			}
 		}
 	}
-}
-
-dict_entry *ht_pop_hash_entry(hashtable *ht, unsigned int hash)
-{
-	list *hash_node = ht->buckets[hash % ht->num_buckets];
-	if (!hash_node)
-		return NULL;
-
-	dict_entry *entry = hash_node->info;
-
-	ht->buckets[hash] = ht->buckets[hash]->next;
-	free(hash_node);
-
-	return entry;
 }
 
 list *ht_chain_entries(hashtable *ht, unsigned int max_hash)
@@ -148,11 +133,11 @@ list *ht_chain_entries(hashtable *ht, unsigned int max_hash)
 		if (!ht->buckets[i])
 			continue;
 		if (chain_tail &&
-			ht_compute_hash(ht, ht->buckets[i]->info->key) < max_hash)
+			ht_compute_hash(ht, ht->buckets[i]->info.key) < max_hash)
 			chain_tail->next = ht->buckets[i];
 
 		while (ht->buckets[i]) {
-			if (ht_compute_hash(ht, ht->buckets[i]->info->key) >= max_hash)
+			if (ht_compute_hash(ht, ht->buckets[i]->info.key) >= max_hash)
 				break;
 
 			chain_tail = ht->buckets[i];

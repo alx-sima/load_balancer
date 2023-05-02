@@ -247,17 +247,16 @@ void loader_remove_server(load_balancer *main, int server_id)
 
 	list *transferred_item;
 	while ((transferred_item = server_pop_entry(server->server))) {
-		unsigned int item_hash = hash_function_key(transferred_item->info->key);
+		unsigned int item_hash = hash_function_key(transferred_item->info.key);
 		for (int i = 0; i < REPLICA_NUM; ++i) {
 			if (item_hash < neighbours[i].hash) {
-				server_store(neighbours[i].server, transferred_item->info->key,
-							 transferred_item->info->data);
+				server_store(neighbours[i].server, transferred_item->info.key,
+							 transferred_item->info.data);
 				break;
 			}
 		}
-		free(transferred_item->info->key);
-		free(transferred_item->info->data);
-		free(transferred_item->info);
+		free(transferred_item->info.key);
+		free(transferred_item->info.data);
 		free(transferred_item);
 	}
 

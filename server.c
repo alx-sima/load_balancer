@@ -59,13 +59,12 @@ void transfer_items(server_memory *dest, server_memory *src,
 	return;
 	list *chain = ht_chain_entries(src->database, max_hash);
 	while (chain) {
-		ht_store_item(dest->database, chain->info->key, chain->info->data);
+		ht_store_item(dest->database, chain->info.key, chain->info.data);
 		list *old_chain = chain;
 		chain = chain->next;
 
-		free(old_chain->info->data);
-		free(old_chain->info->key);
-		free(old_chain->info);
+		free(old_chain->info.data);
+		free(old_chain->info.key);
 		free(old_chain);
 	}
 	return;

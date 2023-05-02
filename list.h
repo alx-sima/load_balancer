@@ -9,7 +9,7 @@ typedef struct {
 } dict_entry;
 
 typedef struct list {
-	dict_entry *info;
+	dict_entry info;
 	struct list *next;
 } list;
 

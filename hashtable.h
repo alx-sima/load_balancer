@@ -62,15 +62,6 @@ list *ht_pop_entry(hashtable *ht);
 list *ht_chain_entries(hashtable *ht, unsigned int max_hash);
 
 /**
- * @brief Returneaza si sterge din dictionar prima pereche (cheie, valoare) cu
- * hashul dat.
- *
- * @return dict_entry* prima pereche (cheie, valoare) gasita
- * @return NULL nu exista intrari cu hashul dat.
- */
-dict_entry *ht_pop_hash_entry(hashtable *ht, unsigned int hash);
-
-/**
  * @brief Sterge hashtableul si toate resursele alocate de acesta.
  */
 void ht_destroy(hashtable *ht);
