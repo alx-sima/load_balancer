@@ -79,28 +79,6 @@ static struct server_entry *find_server(struct server_entry *hashring,
 	return NULL;
 }
 
-/*
- * @todo DEPRECATED: see compare_servers
- */
-enum order {
-	LOWER,
-	HIGHER,
-	EQUAL,
-};
-
-/**
- * @todo DEPRECATED: see compare_servers_new
- */
-static enum order compare_servers(struct server_entry a, struct server_entry b)
-{
-	if (a.hash != b.hash)
-		return a.hash < b.hash ? LOWER : HIGHER;
-
-	if (a.label != b.label)
-		return a.label < b.label ? LOWER : HIGHER;
-	return EQUAL;
-}
-
 /**
  * @brief Compara 2 struct server_entry* (@todo struct server_entry).
  *
@@ -109,14 +87,14 @@ static enum order compare_servers(struct server_entry a, struct server_entry b)
  *
  * @return	O valoare reprezentand ordinea dintre a si b, compatibila cu qsort
  */
-static int compare_servers_new(const void *a, const void *b)
+static int compare_servers(const void *a, const void *b)
 {
-	const struct server_entry *a_cast = *(struct server_entry **)a;
-	const struct server_entry *b_cast = *(struct server_entry **)b;
+	const struct server_entry *a_cast = a;
+	const struct server_entry *b_cast = b;
 
 	if (a_cast->hash != b_cast->hash)
-		return a_cast->hash - b_cast->hash;
-	return a_cast->label - b_cast->label;
+		return a_cast->hash < b_cast->hash ? -1 : 1;
+	return a_cast->label < b_cast->label ? -1 : 1;
 }
 
 /**
@@ -133,22 +111,21 @@ static size_t search_index(struct server_entry server,
 		if (index >= len)
 			return len;
 
-		switch (compare_servers(server, array[index])) {
-		case LOWER:
+		int order = compare_servers(&server, &array[index]);
+		if (order == 0)
+			return index;
+
+		if (order < 0) {
 			if (!index)
 				return 0;
 			right = index - 1;
-			break;
-		case HIGHER:
+		} else {
 			left = index + 1;
-			break;
-		case EQUAL:
-			return index;
 		}
 	}
 
 	size_t prev_index = (left + right) / 2;
-	if (compare_servers(server, array[prev_index]) == LOWER)
+	if (compare_servers(&server, &array[prev_index]) < 0)
 		return prev_index;
 	return prev_index + 1;
 }
@@ -326,11 +303,8 @@ void loader_add_server(load_balancer *main, int server_id)
 
 void loader_remove_server(load_balancer *main, int server_id)
 {
-	struct server_entry *neighbours[REPLICA_NUM];
+	struct server_entry neighbours[REPLICA_NUM];
 	for (int i = 0; i < REPLICA_NUM; ++i) {
-		neighbours[i] = malloc(sizeof(struct server_entry));
-		DIE(!neighbours[i], "failed malloc() of auxiliary struct");
-
 		unsigned int label = get_nth_replica(server_id, i);
 		unsigned int hash = hash_function_servers(&label);
 
@@ -346,17 +320,17 @@ void loader_remove_server(load_balancer *main, int server_id)
 		/* Daca replica e ultimul element din hashring, elementele care raman
 		 * vor fi preluate de primul server, indiferent de hash. */
 		if (index == main->hashring_size - 1) {
-			memcpy(neighbours[i], &main->hashring[0],
+			memcpy(&neighbours[i], &main->hashring[0],
 				   sizeof(struct server_entry));
-			neighbours[i]->hash = 0xffffffff; /* TODO: constanta */
+			neighbours[i].hash = 0xffffffff; /* TODO: constanta */
 		} else {
-			memcpy(neighbours[i], &main->hashring[index + 1],
+			memcpy(&neighbours[i], &main->hashring[index + 1],
 				   sizeof(struct server_entry));
 		}
 	}
 
-	qsort(neighbours, REPLICA_NUM, sizeof(struct server_entry *),
-		  compare_servers_new);
+	qsort(neighbours, REPLICA_NUM, sizeof(struct server_entry),
+		  compare_servers);
 
 	unsigned int hash = hash_function_servers(&server_id);
 	struct server_entry *server =
@@ -366,8 +340,8 @@ void loader_remove_server(load_balancer *main, int server_id)
 	while ((transferred_item = server_pop_entry(server->server))) {
 		unsigned int item_hash = hash_function_key(transferred_item->info->key);
 		for (int i = 0; i < REPLICA_NUM; ++i) {
-			if (item_hash < neighbours[i]->hash) {
-				server_store(neighbours[i]->server, transferred_item->info->key,
+			if (item_hash < neighbours[i].hash) {
+				server_store(neighbours[i].server, transferred_item->info->key,
 							 transferred_item->info->data);
 				break;
 			}
@@ -378,8 +352,6 @@ void loader_remove_server(load_balancer *main, int server_id)
 		free(transferred_item);
 	}
 
-	for (int i = 0; i < REPLICA_NUM; ++i)
-		free(neighbours[i]);
 	free_server_memory(server->server);
 
 	for (int i = 0; i < REPLICA_NUM; ++i) {
