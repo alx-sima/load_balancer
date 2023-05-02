@@ -256,10 +256,12 @@ char *loader_retrieve(load_balancer *main, char *key, int *server_id)
 }
 
 /**
- * @brief Cauta in hashring o instanta de server cu hash-ul @param target_hash.
+ * @brief Cauta in `hashring` o instanta de server cu un anumit hash.
  *
- * @returns O referinta la instanta de server.
- * @returns NULL daca serverul nu exista.
+ * @param hashring_size Dimensiunea hashringului
+ * @param target_hash Hashul cautat
+ * @return O referinta la instanta de server
+ * @return NULL daca serverul nu exista
  */
 struct server_entry *find_server(struct server_entry *hashring, size_t hashring_size, unsigned int target_hash) {
 	for (size_t i = 0; i < hashring_size; ++i) {
