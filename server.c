@@ -55,6 +55,8 @@ list *server_pop_entry(server_memory *s)
 void transfer_items(server_memory *dest, server_memory *src,
 					unsigned int max_hash)
 {
+	ht_transfer_items(dest->database, src->database, max_hash);
+	return;
 	list *chain = ht_chain_entries(src->database, max_hash);
 	while (chain) {
 		ht_store_item(dest->database, chain->info->key, chain->info->data);

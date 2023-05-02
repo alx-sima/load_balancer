@@ -75,4 +75,5 @@ dict_entry *ht_pop_hash_entry(hashtable *ht, unsigned int hash);
  */
 void ht_destroy(hashtable *ht);
 
+void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int max_hash);
 #endif /* HASHTABLE_H_ */

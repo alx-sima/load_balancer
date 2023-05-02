@@ -111,6 +111,20 @@ list *ht_pop_entry(hashtable *ht)
 	return NULL;
 }
 
+void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int max_hash)
+{
+	for (size_t i = 0; i < src->num_buckets; ++i) {
+		while (src->buckets[i]) {
+			unsigned int hash = hash_function_key(src->buckets[i]->info->key);
+			if (hash < max_hash) {
+				ht_store_item(dest, src->buckets[i]->info->key,
+							  src->buckets[i]->info->data);
+				ht_delete_item(src, src->buckets[i]->info->key);
+			}
+		}
+	}
+}
+
 dict_entry *ht_pop_hash_entry(hashtable *ht, unsigned int hash)
 {
 	list *hash_node = ht->buckets[hash % ht->num_buckets];
