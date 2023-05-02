@@ -85,6 +85,32 @@ void *ht_clone_val(hashtable *ht, void *key)
 	return clone;
 }
 
+/**
+ * @brief Scoate primul element gasit, incepand de la un bucket dat.
+ *
+ * Incepand din bucketul `*bucket`, cauta un element, il scoate din hashtable si
+ * il intoarce, retinand la adresa `bucket`, pozitia la care a fost gasit. In
+ * acest mod, la cautari ulterioare, nu se va mai itera prin bucketuri care se
+ * stie ca sunt goale.
+ *
+ * @return Un nod de lista care contine prima pereche (cheie, valoare) gasita
+ * @return NULL Hashtable-ul nu stocheaza nimic in bucketurile specificate
+ */
+list *ht_pop_entry(hashtable *ht)
+{
+	for (int i = 0; i <  ht->num_buckets; ++i) {
+		if (ht->buckets[i]) {
+			list *found_node = ht->buckets[i];
+			ht->buckets[i] = ht->buckets[i]->next;
+
+			found_node->next = NULL;
+			return found_node;
+		}
+	}
+
+	return NULL;
+}
+
 dict_entry *ht_pop_hash_entry(hashtable *ht, unsigned int hash)
 {
 	list *hash_node = ht->buckets[hash % ht->num_buckets];

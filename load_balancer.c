@@ -44,6 +44,26 @@ struct load_balancer {
 	hashtable *servers_info;
 };
 
+/**
+ * @brief Cauta in `hashring` o instanta de server cu un anumit hash.
+ * @todo Se poate optimiza la cautare binara.
+ *
+ * @param hashring_size Dimensiunea hashringului
+ * @param target_hash Hashul cautat
+ * @return O referinta la instanta de server
+ * @return NULL daca serverul nu exista
+ */
+struct server_entry *find_server(struct server_entry *hashring,
+								 size_t hashring_size, unsigned int target_hash)
+{
+	for (size_t i = 0; i < hashring_size; ++i) {
+		if (hashring[i].hash == target_hash)
+			return &hashring[i];
+	}
+
+	return NULL;
+}
+
 load_balancer *init_load_balancer()
 {
 	load_balancer *lb = malloc(sizeof(load_balancer));
@@ -66,6 +86,9 @@ enum order {
 	EQUAL,
 };
 
+/**
+ * @todo DEPRECATED: see compare_servers_new
+ */
 enum order compare_servers(struct server_entry a, struct server_entry b)
 {
 	if (a.hash != b.hash)
@@ -74,6 +97,16 @@ enum order compare_servers(struct server_entry a, struct server_entry b)
 	if (a.label != b.label)
 		return a.label < b.label ? LOWER : HIGHER;
 	return EQUAL;
+}
+
+int compare_servers_new(const void *a, const void *b)
+{
+	const struct server_entry *a_cast = *(struct server_entry **)a;
+	const struct server_entry *b_cast = *(struct server_entry **)b;
+
+	if (a_cast->hash != b_cast->hash)
+		return a_cast->hash - b_cast->hash;
+	return a_cast->label - b_cast->label;
 }
 
 /**
@@ -189,29 +222,72 @@ void loader_add_server(load_balancer *main, int server_id)
 
 void loader_remove_server(load_balancer *main, int server_id)
 {
-	struct server_info *info = ht_clone_val(main->servers_info, &server_id);
-	ht_delete_item(main->servers_info, &server_id);
+	struct server_entry *neighbours[REPLICA_NUM];
+	for (int i = 0; i < REPLICA_NUM; ++i) {
+		neighbours[i] = malloc(sizeof(struct server_entry));
+		DIE(!neighbours[i], "failed malloc() of auxiliary struct");
 
-	for (int i = REPLICA_NUM; i > 0; --i) {
-		int index = info->indexes[i - 1];
-		unsigned int server_hash = main->hashring[index].hash;
+		unsigned int label = i * 1e5 + server_id;
+		unsigned int hash = hash_function_servers(&label);
 
-		for (size_t j = index + 1; j < main->hashring_size; ++j)
-			update_hashring_position(main, j, j - 1, info, i);
+		struct server_entry *server_replica =
+			find_server(main->hashring, main->hashring_size, hash);
+		DIE(!server_replica, "oops, this shouldn't have happened!");
 
-		size_t next_server_index = index % main->hashring_size--;
-		unsigned int next_server_id = main->hashring[next_server_index].id;
-		struct server_info *next_server_info =
-			ht_get_item(main->servers_info, &next_server_id);
-		if (!next_server_info) {
-			// TODO
-			continue;
+		size_t index = server_replica - main->hashring;
+		while (index < main->hashring_size - 1 && main->hashring[index + 1].id == server_id)
+			++index;
+
+		/* Daca replica e ultimul element din hashring, elementele care raman
+		 * vor fi preluate de primul server, indiferent de hash. */
+		if (index == main->hashring_size - 1) {
+			memcpy(neighbours[i], &main->hashring[0],
+				   sizeof(struct server_entry));
+			neighbours[i]->hash = 0xffffffff; /* TODO: constanta */
+		} else {
+			memcpy(neighbours[i], &main->hashring[index + 1],
+				   sizeof(struct server_entry));
 		}
-		transfer_items(next_server_info->server_addr, info->server_addr,
-					   server_hash);
 	}
-	free_server_memory(info->server_addr);
-	free(info);
+
+	qsort(neighbours, REPLICA_NUM, sizeof(struct server_entry *),
+		  compare_servers_new);
+
+	unsigned int hash = hash_function_servers(&server_id);
+	struct server_entry *server =
+		find_server(main->hashring, main->hashring_size, hash);
+
+	list *transferred_item;
+	while ((transferred_item = server_pop_entry(server->server))) {
+		unsigned int item_hash = hash_function_key(transferred_item->info->key);
+		for (int i = 0; i < REPLICA_NUM; ++i) {
+			if (item_hash < neighbours[i]->hash) {
+				server_store(neighbours[i]->server, transferred_item->info->key,
+						transferred_item->info->data);
+				break;
+			}
+		}
+		free(transferred_item->info->key);
+		free(transferred_item->info->data);
+		free(transferred_item->info);
+		free(transferred_item);
+	}
+
+	for (int i = 0; i < REPLICA_NUM; ++i)
+		free(neighbours[i]);
+	free_server_memory(server->server);
+
+	for (int i = 0; i < REPLICA_NUM; ++i) {
+		unsigned int label = i * 1e5 + server_id;
+		unsigned int hash = hash_function_servers(&label);
+
+		struct server_entry *server = find_server(main->hashring, main->hashring_size, hash);
+		size_t index = server - main->hashring;
+		
+		--main->hashring_size;
+		for (int j = index; j < main->hashring_size; ++j)
+			main->hashring[j] = main->hashring[j + 1];
+	}
 }
 
 struct server_entry *containing_server(struct server_entry *hashring,
@@ -248,26 +324,6 @@ char *loader_retrieve(load_balancer *main, char *key, int *server_id)
 	return server_retrieve(server->server, key);
 }
 
-/**
- * @brief Cauta in `hashring` o instanta de server cu un anumit hash.
- * @todo Se poate optimiza la cautare binara.
- *
- * @param hashring_size Dimensiunea hashringului
- * @param target_hash Hashul cautat
- * @return O referinta la instanta de server
- * @return NULL daca serverul nu exista
- */
-struct server_entry *find_server(struct server_entry *hashring,
-								 size_t hashring_size, unsigned int target_hash)
-{
-	for (size_t i = 0; i < hashring_size; ++i) {
-		if (hashring[i].hash == target_hash)
-			return &hashring[i];
-	}
-
-	return NULL;
-}
-
 void free_load_balancer(load_balancer *main)
 {
 	for (size_t i = 0; i < main->hashring_size; ++i) {
@@ -287,7 +343,7 @@ void free_load_balancer(load_balancer *main)
 
 			struct server_entry *replica =
 				find_server(main->hashring, main->hashring_size, replica_hash);
-			DIE(!replica, "this shouldn't have happened");
+			DIE(!replica, "oops, this shouldn't have happened!");
 			fprintf(stderr,
 					"index %lu, replica %d, replica_index %lu: ptr %p\n", i, j,
 					replica - main->hashring, replica->server);
