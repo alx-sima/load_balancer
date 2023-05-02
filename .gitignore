@@ -1,10 +1,11 @@
 # Checker files
-check.sh
-checkstyle.txt
-cpplint.py
 in/
 out/
 ref/
+check.sh
+checkstyle.txt
+cpplint.py
+time.err
 
 # Build artifacts
 /doc/
