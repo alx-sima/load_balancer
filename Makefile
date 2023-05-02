@@ -28,5 +28,5 @@ $(TARGET): $(OBJ)
 pack:
 
 clean:
-	rm -f $(TARGET) tags vgcore.* *.o *.d *.h.gch
+	rm -f $(TARGET) vgcore.* *.o *.d *.h.gch
 
