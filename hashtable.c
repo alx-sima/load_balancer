@@ -110,16 +110,53 @@ list *ht_pop_entry(hashtable *ht)
 	return NULL;
 }
 
+void list_push(list **l, list *node)
+{
+	if (!*l) {
+		node->next = NULL;
+		*l = node;
+		return;
+	}
+
+	node->next = (*l)->next;
+	*l = node;
+}
+
+void list_split(list *src, list **accepted, list **rejected,
+				unsigned int max_hash)
+{
+	while (src) {
+		list *curr = src;
+		src = src->next;
+
+		unsigned int hash = hash_function_key(curr->info.key);
+		if (hash < max_hash)
+			list_push(accepted, curr);
+		else
+			list_push(rejected, curr);
+	}
+}
+
 void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int max_hash)
 {
 	for (size_t i = 0; i < src->num_buckets; ++i) {
-		while (src->buckets[i]) {
-			unsigned int hash = hash_function_key(src->buckets[i]->info.key);
-			if (hash < max_hash) {
-				ht_store_item(dest, src->buckets[i]->info.key,
-							  src->buckets[i]->info.data);
-				ht_delete_item(src, src->buckets[i]->info.key);
-			}
+		if (!src->buckets[i])
+			continue;
+
+		list *accepted = NULL;
+		list *rejected = NULL;
+		list_split(src->buckets[i], &accepted, &rejected, max_hash);
+
+		src->buckets[i] = rejected;
+		while (accepted) {
+			dict_entry pair = accepted->info;
+			ht_store_item(dest, pair.key, pair.data);
+
+			free(pair.key);
+			free(pair.data);
+			list *oldptr = accepted;
+			accepted = accepted->next;
+			free(oldptr);
 		}
 	}
 }
