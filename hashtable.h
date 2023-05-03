@@ -66,5 +66,6 @@ list *ht_chain_entries(hashtable *ht, unsigned int max_hash);
  */
 void ht_destroy(hashtable *ht);
 
-void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int max_hash);
+void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int min_hash,
+					   unsigned int max_hash);
 #endif /* HASHTABLE_H_ */

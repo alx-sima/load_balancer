@@ -33,6 +33,7 @@ void ht_store_item(hashtable *ht, void *key, void *value)
 {
 	unsigned int hash = ht_compute_hash(ht, key);
 	list *bucket_iter = ht->buckets[hash];
+	fprintf(stderr, "%p added %s\n", ht, key);
 
 	/* Nodul se insereaza la inceputul listei */
 	if (!bucket_iter || hash < ht_compute_hash(ht, bucket_iter->info.key)) {
@@ -59,6 +60,7 @@ void ht_delete_item(hashtable *ht, void *key)
 {
 	unsigned int hash = ht_compute_hash(ht, key);
 	list *item_node = list_pop_item(&ht->buckets[hash], key, ht->key_size);
+	fprintf(stderr, "removed %s\n", key);
 
 	free(item_node->info.key);
 	free(item_node->info.data);
@@ -118,26 +120,27 @@ void list_push(list **l, list *node)
 		return;
 	}
 
-	node->next = (*l)->next;
+	node->next = *l;
 	*l = node;
 }
 
 void list_split(list *src, list **accepted, list **rejected,
-				unsigned int max_hash)
+				unsigned int min_hash, unsigned int max_hash)
 {
 	while (src) {
 		list *curr = src;
 		src = src->next;
 
 		unsigned int hash = hash_function_key(curr->info.key);
-		if (hash < max_hash)
+		if (min_hash <= hash && hash < max_hash)
 			list_push(accepted, curr);
 		else
 			list_push(rejected, curr);
 	}
 }
 
-void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int max_hash)
+void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int min_hash,
+					   unsigned int max_hash)
 {
 	for (size_t i = 0; i < src->num_buckets; ++i) {
 		if (!src->buckets[i])
@@ -145,7 +148,7 @@ void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int max_hash)
 
 		list *accepted = NULL;
 		list *rejected = NULL;
-		list_split(src->buckets[i], &accepted, &rejected, max_hash);
+		list_split(src->buckets[i], &accepted, &rejected, min_hash, max_hash);
 
 		src->buckets[i] = rejected;
 		while (accepted) {

@@ -8,6 +8,7 @@
 
 // FIXME
 #define BUCKET_NO 10
+#define BUCKET_NO 1
 #define KEY_LENGTH 128
 #define VALUE_LENGTH 65536
 
@@ -53,9 +54,9 @@ list *server_pop_entry(server_memory *s)
 }
 
 void transfer_items(server_memory *dest, server_memory *src,
-					unsigned int max_hash)
+					unsigned int min_hash, unsigned int max_hash)
 {
-	ht_transfer_items(dest->database, src->database, max_hash);
+	ht_transfer_items(dest->database, src->database, min_hash, max_hash);
 	return;
 	list *chain = ht_chain_entries(src->database, max_hash);
 	while (chain) {

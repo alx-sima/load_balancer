@@ -42,6 +42,7 @@ void list_destroy(list *l)
 {
 	while (l) {
 		list *next = l->next;
+		fprintf(stderr, "destroyed %s\n", l->info.key);
 		list_delete_node(l);
 		l = next;
 	}

@@ -55,6 +55,6 @@ char *server_retrieve(server_memory *server, char *key);
 list *server_pop_entry(server_memory *s);
 
 void transfer_items(server_memory *dest, server_memory *src,
-					unsigned int max_hash);
+					unsigned int min_hash, unsigned int max_hash);
 
 #endif /* SERVER_H_ */

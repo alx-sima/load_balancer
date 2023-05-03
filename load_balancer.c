@@ -194,15 +194,26 @@ void loader_add_server(load_balancer *main, int server_id)
 
 		struct server_entry *neighbor =
 			containing_server(main->hashring, server_count, hash);
-		transfer_items(server, neighbor->server, hash);
-
 		size_t index = neighbor - main->hashring;
-		/* Chiar daca noul label preia obiecte de la primul server, acesta e de
-		 * fapt ultimul pe hashring */
-		if (index == 0 && main->hashring[0].hash < hash) {
-			main->hashring[server_count++] = new_label;
-			continue;
+		unsigned int min_hash;
+
+		if (index == 0) {
+			/* Chiar daca noul label preia obiecte de la primul
+			 * server, acesta e de fapt ultimul pe hashring */
+			if (main->hashring[0].hash < hash) {
+				min_hash = main->hashring[server_count - 1].hash;
+				main->hashring[server_count++] = new_label;
+				transfer_items(server, neighbor->server, min_hash, hash);
+				continue;
+			}
+
+			min_hash = 0;
+		} else {
+			min_hash = main->hashring[index - 1].hash;
 		}
+
+		transfer_items(server, neighbor->server, min_hash, hash);
+
 		for (size_t j = server_count++; j > index; --j)
 			main->hashring[j] = main->hashring[j - 1];
 
@@ -221,22 +232,22 @@ void loader_remove_server(load_balancer *main, int server_id)
 			find_server(main->hashring, main->hashring_size, hash);
 		DIE(!server_replica, "oops, this shouldn't have happened!");
 
-		size_t index = server_replica - main->hashring;
-		while (index < main->hashring_size - 1 &&
-			   main->hashring[index + 1].id == server_id)
-			++index;
+		size_t neighbour_index = server_replica - main->hashring + 1;
+		while (neighbour_index < main->hashring_size &&
+			   main->hashring[neighbour_index].id == server_id)
+			++neighbour_index;
 
 		/* Daca replica e ultimul element din hashring, elementele care raman
 		 * vor fi preluate de primul server diferit, indiferent de hash. */
-		if (index == main->hashring_size - 1) {
-			size_t neighbour_index = 0;
+		if (neighbour_index == main->hashring_size) {
+			neighbour_index = 0;
 			while (main->hashring[neighbour_index].id == server_id)
 				++neighbour_index;
 
 			neighbours[i] = main->hashring[neighbour_index];
 			neighbours[i].hash = 0xffffffff; /* TODO: constanta */
 		} else {
-			neighbours[i] = main->hashring[index + 1];
+			neighbours[i] = main->hashring[neighbour_index];
 		}
 	}
 
