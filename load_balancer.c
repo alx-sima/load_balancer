@@ -227,14 +227,16 @@ void loader_remove_server(load_balancer *main, int server_id)
 			++index;
 
 		/* Daca replica e ultimul element din hashring, elementele care raman
-		 * vor fi preluate de primul server, indiferent de hash. */
+		 * vor fi preluate de primul server diferit, indiferent de hash. */
 		if (index == main->hashring_size - 1) {
-			memcpy(&neighbours[i], &main->hashring[0],
-				   sizeof(struct server_entry));
+			size_t neighbour_index = 0;
+			while (main->hashring[neighbour_index].id == server_id)
+				++neighbour_index;
+
+			neighbours[i] = main->hashring[neighbour_index];
 			neighbours[i].hash = 0xffffffff; /* TODO: constanta */
 		} else {
-			memcpy(&neighbours[i], &main->hashring[index + 1],
-				   sizeof(struct server_entry));
+			neighbours[i] = main->hashring[index + 1];
 		}
 	}
 
