@@ -24,8 +24,10 @@ format: $(SRC) $(HEADERS)
 tags: $(SRC) $(HEADERS)
 	ctags $?
 
-pack: README.md Makefile $(SRC) $(HEADERS)
-	zip -FSr $(TARGET).zip $@
+pack: $(TARGET).zip
+
+$(TARGET).zip: README.md Makefile $(SRC) $(HEADERS)
+	zip -FSr $@ $^
 
 clean:
 	rm -f $(TARGET) $(TARGET).zip vgcore.* *.o *.d *.h.gch
