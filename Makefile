@@ -9,15 +9,26 @@ SRC=$(wildcard *.c)
 OBJ=$(SRC:%.c=%.o)
 DEP=$(OBJ:%.o=%.d)
 
-.PHONY: build format pack clean
+.PHONY: all build doc format pack clean
 
 build: $(TARGET)
 
-tags: $(SRC)
+all: build doc tags format
+
+doc: Doxyfile $(SRC) $(HEADERS)
+	doxygen
+
+format: $(SRC) $(HEADERS)
+	clang-format -i $?
+
+tags: $(SRC) $(HEADERS)
 	ctags $?
 
-format:
-	clang-format -i *.{c,h}
+pack: README.md Makefile $(SRC) $(HEADERS)
+	zip -FSr $(TARGET).zip $@
+
+clean:
+	rm -f $(TARGET) $(TARGET).zip vgcore.* *.o *.d *.h.gch
 
 $(TARGET): $(OBJ)
 	$(CC) $^ -o $@
@@ -26,10 +37,4 @@ $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $^ -c -MMD -MP -MF $(@:.o=.d)
 
 -include $(DEP)
-
-pack: README.md Makefile $(SRC) $(HEADERS)
-	zip -FSr $(TARGET).zip $@
-
-clean:
-	rm -f $(TARGET) $(TARGET).zip vgcore.* *.o *.d *.h.gch
 
