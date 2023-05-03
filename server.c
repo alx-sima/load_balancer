@@ -8,7 +8,6 @@
 
 // FIXME
 #define BUCKET_NO 10
-#define BUCKET_NO 1
 #define KEY_LENGTH 128
 #define VALUE_LENGTH 65536
 

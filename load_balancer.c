@@ -207,7 +207,12 @@ void loader_add_server(load_balancer *main, int server_id)
 				continue;
 			}
 
-			min_hash = 0;
+			transfer_items(server, neighbor->server, 0, hash);
+			/* Devenind primul element de pe hashring, acesta va prelua toate
+			 * elementele care se aflau in primul server pentru ca aveau hashul
+			 * mai mare decat ultimul server. */
+			min_hash = main->hashring[server_count - 1].hash;
+			hash = 0xffffffff;
 		} else {
 			min_hash = main->hashring[index - 1].hash;
 		}
