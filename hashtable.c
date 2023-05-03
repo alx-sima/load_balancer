@@ -59,7 +59,7 @@ void ht_store_item(hashtable *ht, void *key, void *value)
 void ht_delete_item(hashtable *ht, void *key)
 {
 	unsigned int hash = ht_compute_hash(ht, key);
-	list *item_node = list_pop_item(&ht->buckets[hash], key, ht->key_size);
+	list *item_node = list_extract_item(&ht->buckets[hash], key, ht->key_size);
 	fprintf(stderr, "removed %s\n", key);
 
 	free(item_node->info.key);
@@ -110,33 +110,6 @@ list *ht_pop_entry(hashtable *ht)
 	}
 
 	return NULL;
-}
-
-void list_push(list **l, list *node)
-{
-	if (!*l) {
-		node->next = NULL;
-		*l = node;
-		return;
-	}
-
-	node->next = *l;
-	*l = node;
-}
-
-void list_split(list *src, list **accepted, list **rejected,
-				unsigned int min_hash, unsigned int max_hash)
-{
-	while (src) {
-		list *curr = src;
-		src = src->next;
-
-		unsigned int hash = hash_function_key(curr->info.key);
-		if (min_hash <= hash && hash < max_hash)
-			list_push(accepted, curr);
-		else
-			list_push(rejected, curr);
-	}
 }
 
 void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int min_hash,
