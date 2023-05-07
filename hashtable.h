@@ -51,8 +51,6 @@ void *ht_get_item(hashtable *ht, void *key);
 
 void *ht_clone_val(hashtable *ht, void *key);
 
-list *ht_pop_entry(hashtable *ht);
-
 /**
  * @brief Alcatuieste o lista inlantuita cu perechile (cheie, valoare) care au
  * hashul mai mic decat o valoare data, stergandu-le din hashtable.
@@ -68,4 +66,5 @@ void ht_destroy(hashtable *ht);
 
 void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int min_hash,
 					   unsigned int max_hash);
+
 #endif /* HASHTABLE_H_ */

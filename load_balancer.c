@@ -1,4 +1,5 @@
 /* Copyright 2023 Sima Alexandru (312CA) */
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -6,8 +7,6 @@
 #include "load_balancer.h"
 #include "server.h"
 #include "utils.h"
-
-#define BUCKET_NO 123
 
 /** De cate ori e replicat fiecare server */
 #define REPLICA_NUM 3
@@ -63,24 +62,6 @@ static struct server_entry *find_server(struct server_entry *hashring,
 }
 
 /**
- * @brief Compara 2 struct server_entry* (@todo struct server_entry).
- *
- * @param a	Pointer la prima valoare
- * @param b Pointer la a 2-a valoare
- *
- * @return	O valoare reprezentand ordinea dintre a si b, compatibila cu qsort
- */
-static int compare_servers(const void *a, const void *b)
-{
-	const struct server_entry *a_cast = a;
-	const struct server_entry *b_cast = b;
-
-	if (a_cast->hash != b_cast->hash)
-		return a_cast->hash < b_cast->hash ? -1 : 1;
-	return a_cast->label < b_cast->label ? -1 : 1;
-}
-
-/**
  * @brief Returneaza serverul care poate contine un hash anume.
  *
  * @param hashring			Vectorul in care se cauta
@@ -99,6 +80,24 @@ static struct server_entry *containing_server(struct server_entry *hashring,
 	/* Pentru ca hashringul este circular, daca nu se gaseste un server cu un
 	 * hash mai mare, obiectul va ajunge in primul server */
 	return &hashring[0];
+}
+
+/**
+ * @brief Compara 2 structuri `server_entry`.
+ *
+ * @param a	Pointer la prima valoare
+ * @param b Pointer la a 2-a valoare
+ *
+ * @return	O valoare reprezentand ordinea dintre a si b, compatibila cu qsort
+ */
+static int compare_servers(const void *a, const void *b)
+{
+	const struct server_entry *a_cast = a;
+	const struct server_entry *b_cast = b;
+
+	if (a_cast->hash != b_cast->hash)
+		return a_cast->hash < b_cast->hash ? -1 : 1;
+	return a_cast->label < b_cast->label ? -1 : 1;
 }
 
 load_balancer *init_load_balancer()
@@ -173,7 +172,8 @@ void loader_add_server(load_balancer *main, int server_id)
 		main->hashring_capacity *= REALLOC_FACTOR;
 		main->hashring = realloc(main->hashring, sizeof(struct server_entry) *
 													 main->hashring_capacity);
-		DIE(!main->hashring, "failed realloc() of load_balancer.hashring");
+		DIE(!main->hashring,
+			"failed realloc() (extending) of load_balancer.hashring");
 	}
 	for (int i = 0; i < REPLICA_NUM; ++i) {
 		unsigned int label = get_nth_replica(server_id, i);
@@ -250,7 +250,7 @@ void loader_remove_server(load_balancer *main, int server_id)
 				++neighbour_index;
 
 			neighbours[i] = main->hashring[neighbour_index];
-			neighbours[i].hash = 0xffffffff; /* TODO: constanta */
+			neighbours[i].hash = UINT_MAX;
 		} else {
 			neighbours[i] = main->hashring[neighbour_index];
 		}
@@ -263,21 +263,9 @@ void loader_remove_server(load_balancer *main, int server_id)
 	struct server_entry *server =
 		find_server(main->hashring, main->hashring_size, hash);
 
-	list *transferred_item;
-	while ((transferred_item = server_pop_entry(server->server))) {
-		unsigned int item_hash = hash_function_key(transferred_item->info.key);
-		for (int i = 0; i < REPLICA_NUM; ++i) {
-			if (item_hash < neighbours[i].hash) {
-				server_store(neighbours[i].server, transferred_item->info.key,
-							 transferred_item->info.data);
-				break;
-			}
-		}
-		free(transferred_item->info.key);
-		free(transferred_item->info.data);
-		free(transferred_item);
-	}
-
+	for (int i = 0; i < REPLICA_NUM; ++i)
+		transfer_items(neighbours[i].server, server->server, 0,
+					   neighbours[i].hash);
 	free_server_memory(server->server);
 
 	for (int i = 0; i < REPLICA_NUM; ++i) {
@@ -291,5 +279,13 @@ void loader_remove_server(load_balancer *main, int server_id)
 		--main->hashring_size;
 		for (size_t j = index; j < main->hashring_size; ++j)
 			main->hashring[j] = main->hashring[j + 1];
+	}
+
+	if (main->hashring_size < main->hashring_capacity / REALLOC_FACTOR) {
+		main->hashring_capacity /= REALLOC_FACTOR;
+		main->hashring = realloc(main->hashring, sizeof(struct server_entry) *
+													 main->hashring_capacity);
+		DIE(!main->hashring,
+			"failed realloc() (shrinking) of load_balancer.hashring");
 	}
 }

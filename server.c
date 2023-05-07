@@ -6,10 +6,9 @@
 #include "server.h"
 #include "utils.h"
 
-// FIXME
-#define BUCKET_NO 10
-#define KEY_LENGTH 128
-#define VALUE_LENGTH 65536
+#define BUCKET_NO 421
+#define KEY_LENGTH 128	   // FIXME
+#define VALUE_LENGTH 65536 // FIXME
 
 struct server_memory {
 	hashtable *database;
@@ -45,11 +44,6 @@ void free_server_memory(server_memory *server)
 {
 	ht_destroy(server->database);
 	free(server);
-}
-
-list *server_pop_entry(server_memory *s)
-{
-	return ht_pop_entry(s->database);
 }
 
 void transfer_items(server_memory *dest, server_memory *src,

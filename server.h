@@ -56,10 +56,6 @@ void server_remove(server_memory *server, char *key);
  */
 char *server_retrieve(server_memory *server, char *key);
 
-/* TODO */
-#include "list.h"
-list *server_pop_entry(server_memory *s);
-
 /**
  * @relates server_memory
  * @brief Transfera obiectele stocate in `src` care indeplinesc conditia
