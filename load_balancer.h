@@ -4,89 +4,71 @@
 
 #include "server.h"
 
+/**
+ * @class load_balancer
+ * @brief Entitate care distribuie uniform obiecte
+ * pe mai multe servere, folosind consistent hashing.
+ */
 struct load_balancer;
 typedef struct load_balancer load_balancer;
 
 /**
- * init_load_balancer() - initializes the memory for a new load balancer and its
- * fields and returns a pointer to it
+ * @relates load_balancer
+ * @brief Aloca si initializeaza un load balancer.
  *
- * Return: pointer to the load balancer struct
+ * @return Referinta la nodul alocat
  */
 load_balancer *init_load_balancer();
 
 /**
- * free_load_balancer() - frees the memory of every field that is related to the
- * load balancer (servers, hashring)
+ * @relates load_balancer
+ * @brief Elibereaza load balancerul si toate serverele de pe acesta.
  *
- * @arg1: Load balancer to free
+ * @param main Load balancerul care este eliberat
  */
 void free_load_balancer(load_balancer *main);
 
 /**
- * load_store() - Stores the key-value pair inside the system.
- * @arg1: Load balancer which distributes the work.
- * @arg2: Key represented as a string.
- * @arg3: Value represented as a string.
- * @arg4: This function will RETURN via this parameter
- *        the server ID which stores the object.
+ * @relates load_balancer
+ * @brief Stocheaza o valoare la o anumita cheie in sistem.
  *
- * The load balancer will use Consistent Hashing to distribute the
- * load across the servers. The chosen server ID will be returned
- * using the last parameter.
- *
- * Hint:
- * Search the hashring associated to the load balancer to find the server where
- * the entry should be stored and call the function to store the entry on the
- * respective server.
- *
+ * @param main				Load balancerul in care se stocheaza
+ * @param key				Cheia la care se stocheaza
+ * @param value				Valoarea stocata
+ * @param server_id[out]	Id-ul serverului pe care a fost stocata valoarea
  */
 void loader_store(load_balancer *main, char *key, char *value, int *server_id);
 
 /**
- * load_retrieve() - Gets a value associated with the key.
- * @arg1: Load balancer which distributes the work.
- * @arg2: Key represented as a string.
- * @arg3: This function will RETURN the server ID
-		  which stores the value via this parameter.
+ * @relates load_balancer
+ * @brief Intoarce valoarea stocata pe hashring.
  *
- * The load balancer will search for the server which should posess the
- * value associated to the key. The server will return NULL in case
- * the key does NOT exist in the system.
+ * @param main				Load balancerul pe care se cauta cheia
+ * @param key				Cheia cautata
+ * @param server_id[out]	Serverul pe care se afla cheia cautata
  *
- * Hint:
- * Search the hashring associated to the load balancer to find the server where
- the entry
- * should be stored and call the function to store the entry on the respective
- server.
+ * @return		Valoarea stocata la cheia `key`
+ * @retval NULL Cheia nu exista in sistem
  */
 char *loader_retrieve(load_balancer *main, char *key, int *server_id);
 
 /**
- * load_add_server() - Adds a new server to the system.
- * @arg1: Load balancer which distributes the work.
- * @arg2: ID of the new server.
+ * @relates load_balancer
+ * @brief Adauga un nou server in load balancer, redistribuind elementele
+ * serverelor vecine pe hashring.
  *
- * The load balancer will generate 3 replica labels and it will
- * place them inside the hash ring. The neighbor servers will
- * distribute some the objects to the added server.
- *
- * Hint:
- * Resize the servers array to add a new one.
- * Add each label in the hashring in its appropiate position.
- * Do not forget to resize the hashring and redistribute the objects
- * after each label add (the operations will be done 3 times, for each replica).
+ * @param main		Load balancerul
+ * @param server_id	Id-ul serverului de adaugat
  */
 void loader_add_server(load_balancer *main, int server_id);
 
 /**
- * load_remove_server() - Removes a specific server from the system.
- * @arg1: Load balancer which distributes the work.
- * @arg2: ID of the removed server.
+ * @relates load_balancer
+ * @brief Sterge un server din load balancer, redistribuindu-i elementele pe
+ * hashring.
  *
- * The load balancer will distribute ALL objects stored on the
- * removed server and will delete ALL replicas from the hash ring.
- *
+ * @param main		Load balancerul
+ * @param server_id	ID-ul serverului care trebuie sters
  */
 void loader_remove_server(load_balancer *main, int server_id);
 

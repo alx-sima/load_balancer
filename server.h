@@ -2,51 +2,57 @@
 #ifndef SERVER_H_
 #define SERVER_H_
 
+/**
+ * @class server_memory
+ * @brief Server care poate memora, cauta si sterge obiecte.
+ */
 struct server_memory;
 typedef struct server_memory server_memory;
 
-/** init_server_memory() -  Initializes the memory for a new server struct.
- * 							Make sure to check what is returned by malloc using
- * DIE. Use the linked list implementation from the lab.
+/**
+ * @relates server_memory
+ * @brief Aloca si initializeaza un server.
  *
- * Return: pointer to the allocated server_memory struct.
+ * @return Un nou server initializat
  */
 server_memory *init_server_memory();
 
-/** free_server_memory() - Free the memory used by the server.
- * 						   Make sure to also free the pointer to the server
- * struct. You can use the server_remove() function for this.
+/**
+ * @relates server_memory
+ * @brief Elibereaza memoria serverului, stergand toate obiectele continute.
  *
- * @arg1: Server to free
+ * @param server Serverul care este eliberat
  */
 void free_server_memory(server_memory *server);
 
 /**
- * server_store() - Stores a key-value pair to the server.
+ * @relates server_memory
+ * @brief Stocheaza pe server o pereche (cheie, valoare).
  *
- * @arg1: Server which performs the task.
- * @arg2: Key represented as a string.
- * @arg3: Value represented as a string.
+ * @param server	Serverul pe care se executa operatia
+ * @param key		Cheia stocata
+ * @param value		Valoarea stocata
  */
 void server_store(server_memory *server, char *key, char *value);
 
 /**
- * server_remove() - Removes a key-pair value from the server.
- *					 Make sure to free the memory of everything that is related
- *to the entry removed.
+ * @relates server_memory
+ * @brief Sterge o pereche (cheie, valoare) de pe server.
  *
- * @arg1: Server which performs the task.
- * @arg2: Key represented as a string.
+ * @param server	Serverul pe care se executa operatia
+ * @param key		Cheia perechii sterse
  */
 void server_remove(server_memory *server, char *key);
 
 /**
- * server_retrieve() - Gets the value associated with the key.
- * @arg1: Server which performs the task.
- * @arg2: Key represented as a string.
+ * @relates server_memory
+ * @brief Returneaza valoarea stocata la o cheie.
  *
- * Return: String value associated with the key
- *         or NULL (in case the key does not exist).
+ * @param server	Serverul pe care se cauta cheia
+ * @param key		Cheia cautata
+ *
+ * @return		Valoarea gasita
+ * @retval NULL	Valoarea nu exista pe server
  */
 char *server_retrieve(server_memory *server, char *key);
 
@@ -54,6 +60,16 @@ char *server_retrieve(server_memory *server, char *key);
 #include "list.h"
 list *server_pop_entry(server_memory *s);
 
+/**
+ * @relates server_memory
+ * @brief Transfera obiectele stocate in `src` care indeplinesc conditia
+ * hashului pe serverul `dest`.
+ *
+ * @param dest		Serverul destinatie
+ * @param src		Serverul original
+ * @param min_hash	hashul minim pe care il au obiectele transferate
+ * @param max_hash	hashul maxim pe care il au obiectele transferate
+ */
 void transfer_items(server_memory *dest, server_memory *src,
 					unsigned int min_hash, unsigned int max_hash);
 
