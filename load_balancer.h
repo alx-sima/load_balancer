@@ -32,10 +32,10 @@ void free_load_balancer(load_balancer *main);
  * @relates load_balancer
  * @brief Stocheaza o valoare la o anumita cheie in sistem.
  *
- * @param main				Load balancerul in care se stocheaza
- * @param key				Cheia la care se stocheaza
- * @param value				Valoarea stocata
- * @param server_id[out]	Id-ul serverului pe care a fost stocata valoarea
+ * @param		main		Load balancerul in care se stocheaza
+ * @param		key			Cheia la care se stocheaza
+ * @param		value		Valoarea stocata
+ * @param[out]	server_id	Id-ul serverului pe care a fost stocata valoarea
  */
 void loader_store(load_balancer *main, char *key, char *value, int *server_id);
 
@@ -43,9 +43,9 @@ void loader_store(load_balancer *main, char *key, char *value, int *server_id);
  * @relates load_balancer
  * @brief Intoarce valoarea stocata pe hashring.
  *
- * @param main				Load balancerul pe care se cauta cheia
- * @param key				Cheia cautata
- * @param server_id[out]	Serverul pe care se afla cheia cautata
+ * @param		main		Load balancerul pe care se cauta cheia
+ * @param		key			Cheia cautata
+ * @param[out]	server_id	Serverul pe care se afla cheia cautata
  *
  * @return		Valoarea stocata la cheia `key`
  * @retval NULL Cheia nu exista in sistem

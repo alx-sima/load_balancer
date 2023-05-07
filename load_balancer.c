@@ -1,5 +1,6 @@
 /* Copyright 2023 Sima Alexandru (312CA) */
 #include <limits.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -40,46 +41,57 @@ static inline unsigned int get_nth_replica(unsigned int id, int nth)
 }
 
 /**
- * @brief Cauta in `hashring` o instanta de server cu un anumit hash.
- * @todo Se poate optimiza la cautare binara.
+ * @brief Cauta un server cu un anumit hash/caruia ii 
+ * este repartizat un anumit hash.
  *
- * @param hashring_size Dimensiunea hashringului
- * @param target_hash Hashul cautat
+ * @param hashring				Hashringul pe care se executa operatia
+ * @param hashring_size			Dimensiunea hashringului
+ * @param target_hash			Hashul cautat
+ * @param search_containing		Daca este setat, nu se cauta un hash al unui 
+ *								server, ci serverul care poate stoca acel hash
  *
- * @return O referinta la instanta de server
- * @return NULL daca serverul nu exista
+ * @return		Referinta la serverul gasit
+ * @retval NULL	Nu exista un server cu acel hash
  */
 static struct server_entry *find_server(struct server_entry *hashring,
-										size_t hashring_size,
-										unsigned int target_hash)
+										 size_t hashring_size,
+										 unsigned int target_hash,
+										 int search_containing)
 {
-	for (size_t i = 0; i < hashring_size; ++i) {
-		if (hashring[i].hash == target_hash)
-			return &hashring[i];
+	size_t left = 0;
+	size_t right = hashring_size - 1;
+
+	while (left <= right) {
+		int index = (left + right) / 2;
+		unsigned int hash = hash_function_servers(&hashring[index].label);
+
+		if (hash == target_hash)
+			return &hashring[index];
+
+		if (hash < target_hash) {
+			left = index + 1;
+			continue;
+		}
+
+		right = index - 1;
+		if (search_containing) {
+			if (index == 0)
+				return &hashring[0];
+
+			unsigned int previous_hash =
+				hash_function_servers(&hashring[index - 1].label);
+
+			/* Hash-ul este cuprins intre cel al serverului 
+			 * curent si hashul serverului anterior, deci 
+			 * elementul apartine serverului curent. */
+			if (previous_hash < target_hash)
+				return &hashring[index];
+		}
 	}
 
-	return NULL;
-}
-
-/**
- * @brief Returneaza serverul care poate contine un hash anume.
- *
- * @param hashring			Vectorul in care se cauta
- * @param hashring_size		Dimensiunea vectorului
- * @param target_hash		Hashul cautat
- */
-static struct server_entry *containing_server(struct server_entry *hashring,
-											  size_t hashring_size,
-											  unsigned int target_hash)
-{
-	for (unsigned int i = 0; i < hashring_size; ++i) {
-		if (target_hash < hashring[i].hash)
-			return &hashring[i];
-	}
-
-	/* Pentru ca hashringul este circular, daca nu se gaseste un server cu un
-	 * hash mai mare, obiectul va ajunge in primul server */
-	return &hashring[0];
+	/* Daca nu a fost gasit un server care sa contina hashul (valabil pentru
+	 * `search_containing == 1`), elementul revine primului server. */
+	return search_containing ? &hashring[0] : NULL;
 }
 
 /**
@@ -88,7 +100,8 @@ static struct server_entry *containing_server(struct server_entry *hashring,
  * @param a	Pointer la prima valoare
  * @param b Pointer la a 2-a valoare
  *
- * @return	O valoare reprezentand ordinea dintre a si b, compatibila cu qsort
+ * @retval -1	`a` < `b`
+ * @retval	1	`a` > `b`
  */
 static int compare_servers(const void *a, const void *b)
 {
@@ -130,8 +143,8 @@ void free_load_balancer(load_balancer *main)
 			unsigned int replica_label = get_nth_replica(curr_entry->id, j);
 			unsigned int replica_hash = hash_function_servers(&replica_label);
 
-			struct server_entry *replica =
-				find_server(main->hashring, main->hashring_size, replica_hash);
+			struct server_entry *replica = find_server(
+				main->hashring, main->hashring_size, replica_hash, false);
 			DIE(!replica, "oops, this shouldn't have happened!");
 
 			replica->server = NULL;
@@ -147,7 +160,7 @@ void loader_store(load_balancer *main, char *key, char *value, int *server_id)
 	unsigned int hash = hash_function_key(key);
 
 	struct server_entry *server =
-		containing_server(main->hashring, main->hashring_size, hash);
+		find_server(main->hashring, main->hashring_size, hash, true);
 	*server_id = server->id;
 	server_store(server->server, key, value);
 }
@@ -157,7 +170,7 @@ char *loader_retrieve(load_balancer *main, char *key, int *server_id)
 	unsigned int hash = hash_function_key(key);
 
 	struct server_entry *server =
-		containing_server(main->hashring, main->hashring_size, hash);
+		find_server(main->hashring, main->hashring_size, hash, true);
 	*server_id = server->id;
 	return server_retrieve(server->server, key);
 }
@@ -193,7 +206,7 @@ void loader_add_server(load_balancer *main, int server_id)
 		}
 
 		struct server_entry *neighbor =
-			containing_server(main->hashring, server_count, hash);
+			find_server(main->hashring, server_count, hash, true);
 		size_t index = neighbor - main->hashring;
 		unsigned int min_hash;
 
@@ -234,7 +247,7 @@ void loader_remove_server(load_balancer *main, int server_id)
 		unsigned int hash = hash_function_servers(&label);
 
 		struct server_entry *server_replica =
-			find_server(main->hashring, main->hashring_size, hash);
+			find_server(main->hashring, main->hashring_size, hash, false);
 		DIE(!server_replica, "oops, this shouldn't have happened!");
 
 		size_t neighbour_index = server_replica - main->hashring + 1;
@@ -261,11 +274,12 @@ void loader_remove_server(load_balancer *main, int server_id)
 
 	unsigned int hash = hash_function_servers(&server_id);
 	struct server_entry *server =
-		find_server(main->hashring, main->hashring_size, hash);
+		find_server(main->hashring, main->hashring_size, hash, false);
 
 	for (int i = 0; i < REPLICA_NUM; ++i)
 		transfer_items(neighbours[i].server, server->server, 0,
 					   neighbours[i].hash);
+
 	free_server_memory(server->server);
 
 	for (int i = 0; i < REPLICA_NUM; ++i) {
@@ -273,7 +287,7 @@ void loader_remove_server(load_balancer *main, int server_id)
 		unsigned int hash = hash_function_servers(&label);
 
 		struct server_entry *server =
-			find_server(main->hashring, main->hashring_size, hash);
+			find_server(main->hashring, main->hashring_size, hash, false);
 		size_t index = server - main->hashring;
 
 		--main->hashring_size;
