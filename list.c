@@ -1,6 +1,4 @@
 /* Copyright 2023 Sima Alexandru (312CA) */
-#include <string.h>
-
 #include "list.h"
 #include "utils.h"
 

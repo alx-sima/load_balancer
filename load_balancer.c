@@ -2,7 +2,6 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "hashtable.h"
 #include "load_balancer.h"
@@ -66,7 +65,7 @@ static struct server_entry *find_server(struct server_entry *hashring,
 	size_t right = hashring_size - 1;
 
 	while (left <= right) {
-		int index = (left + right) / 2;
+		size_t index = (left + right) / 2;
 		unsigned int hash = hash_function_servers(&hashring[index].label);
 
 		if (hash == target_hash)

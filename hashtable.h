@@ -25,16 +25,6 @@ typedef struct hashtable {
 
 /**
  * @relates hashtable
- * @brief Calculeaza hashul cheii, folosind functia corespunzatoare
- * hashtable-ului.
- *
- * @param ht 	Hashtable-ul in care se calculeaza hashul
- * @param key 	Cheia pentru care se calculeaza hashul
- */
-unsigned int ht_compute_hash(hashtable *ht, void *key);
-
-/**
- * @relates hashtable
  * @brief Creeaza si initializaeaza un hashtable.
  *
  * @param num_buckets 		Numarul de bucketuri ale hashtable-ului
@@ -61,41 +51,21 @@ void ht_store_item(hashtable *ht, void *key, void *value);
 
 /**
  * @relates hashtable
- * @brief Sterge din hashtable elementul cu cheia data.
- *
- * @param ht 	Hashtable-ul din care se sterge
- * @param key 	Cheia elementului de sters
- */
-void ht_delete_item(hashtable *ht, void *key);
-
-/**
- * @relates hashtable
  * @brief Returneaza informatia stocata la cheia data.
  *
  * @param ht 	Hashtable-ul din care se cauta
  * @param key 	Cheia cautata
  */
-void *ht_get_item(hashtable *ht, void *key);
+void *ht_retrieve_item(hashtable *ht, void *key);
 
 /**
  * @relates hashtable
- * @brief Alcatuieste o lista inlantuita cu perechile (cheie, valoare) care au
- * hashul mai mic decat o valoare data, stergandu-le din hashtable.
+ * @brief Sterge din hashtable elementul cu cheia data.
  *
- * @param ht 		Hashtable-ul din care se extrag perechile
- * @param max_hash 	Valoarea maxima a hashului
- *
- * @return Inceputul listei simplu inlantuite cu perechi.
+ * @param ht 	Hashtable-ul din care se sterge
+ * @param key 	Cheia elementului de sters
  */
-list *ht_chain_entries(hashtable *ht, unsigned int max_hash);
-
-/**
- * @relates hashtable
- * @brief Sterge hashtableul si toate resursele alocate de acesta.
- *
- * @param ht Hashtable-ul de eliberat
- */
-void ht_destroy(hashtable *ht);
+void ht_remove_item(hashtable *ht, void *key);
 
 /**
  * @relates hashtable
@@ -109,5 +79,13 @@ void ht_destroy(hashtable *ht);
  */
 void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int min_hash,
 					   unsigned int max_hash);
+
+/**
+ * @relates hashtable
+ * @brief Sterge hashtableul si toate resursele alocate de acesta.
+ *
+ * @param ht Hashtable-ul de eliberat
+ */
+void ht_destroy(hashtable *ht);
 
 #endif /* HASHTABLE_H_ */

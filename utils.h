@@ -16,8 +16,22 @@
 		}                                                                      \
 	} while (0)
 
+/**
+ * @brief Calculeaza hashul asociat unui server.
+ *
+ * @param a Labelul serverului
+ *
+ * @return Hashul calculat
+ */
 unsigned int hash_function_servers(void *a);
 
+/**
+ * @brief Calculeaza hashul unei chei.
+ *
+ * @param a Stringul reprezentand cheia
+ *
+ * @return Hashul calculat
+ */
 unsigned int hash_function_key(void *a);
 
 #endif /* UTILS_H_ */

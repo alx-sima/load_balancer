@@ -58,12 +58,12 @@ void server_store(server_memory *server, char *key, char *value)
 
 char *server_retrieve(server_memory *server, char *key)
 {
-	return ht_get_item(server->database, key);
+	return ht_retrieve_item(server->database, key);
 }
 
 void server_remove(server_memory *server, char *key)
 {
-	ht_delete_item(server->database, key);
+	ht_remove_item(server->database, key);
 }
 
 void free_server_memory(server_memory *server)
