@@ -27,13 +27,17 @@ struct server_entry {
 };
 
 struct load_balancer {
+	/** Vector circular care retine etichetele
+		asociate serverelor din load balancer. */
 	struct server_entry *hashring;
+	/** Dimensiunea alocata a hashringului. */
 	size_t hashring_capacity;
-	size_t hashring_size; /**< Numarul de servere existente pe hashring. */
+	/** Numarul de servere existente pe hashring. */
+	size_t hashring_size;
 };
 
 /**
- * @brief Returneaza labelul replicii `id` a labelului `nth`.
+ * @brief Calculeaza labelul replicii `id` a labelului `nth`.
  */
 static inline unsigned int get_nth_replica(unsigned int id, int nth)
 {
@@ -41,22 +45,22 @@ static inline unsigned int get_nth_replica(unsigned int id, int nth)
 }
 
 /**
- * @brief Cauta un server cu un anumit hash/caruia ii 
+ * @brief Cauta un server cu un anumit hash/caruia ii
  * este repartizat un anumit hash.
  *
  * @param hashring				Hashringul pe care se executa operatia
  * @param hashring_size			Dimensiunea hashringului
  * @param target_hash			Hashul cautat
- * @param search_containing		Daca este setat, nu se cauta un hash al unui 
+ * @param search_containing		Daca este setat, nu se cauta un hash al unui
  *								server, ci serverul care poate stoca acel hash
  *
  * @return		Referinta la serverul gasit
  * @retval NULL	Nu exista un server cu acel hash
  */
 static struct server_entry *find_server(struct server_entry *hashring,
-										 size_t hashring_size,
-										 unsigned int target_hash,
-										 int search_containing)
+										size_t hashring_size,
+										unsigned int target_hash,
+										int search_containing)
 {
 	size_t left = 0;
 	size_t right = hashring_size - 1;
@@ -81,8 +85,8 @@ static struct server_entry *find_server(struct server_entry *hashring,
 			unsigned int previous_hash =
 				hash_function_servers(&hashring[index - 1].label);
 
-			/* Hash-ul este cuprins intre cel al serverului 
-			 * curent si hashul serverului anterior, deci 
+			/* Hash-ul este cuprins intre cel al serverului
+			 * curent si hashul serverului anterior, deci
 			 * elementul apartine serverului curent. */
 			if (previous_hash < target_hash)
 				return &hashring[index];

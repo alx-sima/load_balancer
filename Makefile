@@ -22,7 +22,7 @@ format: $(SRC) $(HEADERS)
 	clang-format -i $?
 
 tags: $(SRC) $(HEADERS)
-	ctags $?
+	ctags $^
 
 pack: $(TARGET).zip
 

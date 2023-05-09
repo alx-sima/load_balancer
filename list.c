@@ -4,20 +4,13 @@
 #include "list.h"
 #include "utils.h"
 
-list *list_create_node(void *key, void *value, size_t key_size,
-					   size_t data_size)
+list *list_create_node(void *key, void *value)
 {
 	list *node = malloc(sizeof(list));
 	DIE(!node, "failed malloc() of list");
 
-	node->info.key = malloc(key_size);
-	DIE(!node->info.key, "failed malloc() of list.info.key");
-
-	node->info.data = malloc(data_size);
-	DIE(!node->info.data, "failed malloc() of list.info.data");
-
-	memcpy(node->info.key, key, key_size);
-	memcpy(node->info.data, value, data_size);
+	node->info.key = key;
+	node->info.data = value;
 
 	node->next = NULL;
 	return node;
@@ -35,10 +28,10 @@ void list_push(list **l, list *node)
 	*l = node;
 }
 
-void *list_get_item(list *l, void *key, size_t key_size)
+void *list_get_item(list *l, void *key, int (*compare_func)(void *, void *))
 {
 	while (l) {
-		if (memcmp(l->info.key, key, key_size) == 0)
+		if (compare_func(l->info.key, key) == 0)
 			return l->info.data;
 		l = l->next;
 	}
@@ -46,13 +39,14 @@ void *list_get_item(list *l, void *key, size_t key_size)
 	return NULL;
 }
 
-list *list_extract_item(list **l, void *key, size_t key_size)
+list *list_extract_item(list **l, void *key,
+						int (*compare_func)(void *, void *))
 {
 	list *prev = NULL;
 	list *curr = *l;
 
 	while (curr) {
-		if (memcmp(curr->info.key, key, key_size) == 0) {
+		if (compare_func(curr->info.key, key) == 0) {
 			if (prev)
 				prev->next = curr->next;
 			else
@@ -82,13 +76,12 @@ void list_split(list *src, list **accepted, list **rejected,
 	}
 }
 
-void list_destroy(list *l)
+void list_destroy(list *l, void (*destructor_func)(void *, void *))
 {
 	while (l) {
 		list *next = l->next;
-		fprintf(stderr, "destroyed %s\n", l->info.key);
-		free(l->info.key);
-		free(l->info.data);
+
+		destructor_func(l->info.key, l->info.data);
 		free(l);
 		l = next;
 	}
