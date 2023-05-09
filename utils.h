@@ -19,18 +19,18 @@
 /**
  * @brief Calculeaza hashul asociat unui server.
  *
- * @param a Labelul serverului
+ * @param a labelul serverului
  *
- * @return Hashul calculat
+ * @return hashul calculat
  */
 unsigned int hash_function_servers(void *a);
 
 /**
  * @brief Calculeaza hashul unei chei.
  *
- * @param a Stringul reprezentand cheia
+ * @param a stringul reprezentand cheia
  *
- * @return Hashul calculat
+ * @return hashul calculat
  */
 unsigned int hash_function_key(void *a);
 

@@ -9,7 +9,7 @@
 #define BUCKET_NO 421
 
 struct server_memory {
-	/** Hashtable care contine
+	/** hashtable care contine
 	 *obiectele stocate pe server */
 	hashtable *database;
 };

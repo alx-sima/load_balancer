@@ -26,12 +26,12 @@ struct server_entry {
 };
 
 struct load_balancer {
-	/** Vector circular care retine etichetele
-		asociate serverelor din load balancer. */
+	/** vector circular care retine etichetele
+		asociate serverelor din load balancer */
 	struct server_entry *hashring;
-	/** Dimensiunea alocata a hashringului. */
+	/** dimensiunea alocata a hashringului */
 	size_t hashring_capacity;
-	/** Numarul de servere existente pe hashring. */
+	/** numarul de servere existente pe hashring */
 	size_t hashring_size;
 };
 
@@ -47,14 +47,14 @@ static inline unsigned int get_nth_replica(unsigned int id, int nth)
  * @brief Cauta un server cu un anumit hash/caruia ii
  * este repartizat un anumit hash.
  *
- * @param hashring				Hashringul pe care se executa operatia
- * @param hashring_size			Dimensiunea hashringului
- * @param target_hash			Hashul cautat
- * @param search_containing		Daca este setat, nu se cauta un hash al unui
+ * @param hashring				hashringul pe care se executa operatia
+ * @param hashring_size			dimensiunea hashringului
+ * @param target_hash			hashul cautat
+ * @param search_containing		daca este setat, nu se cauta un hash al unui
  *								server, ci serverul care poate stoca acel hash
  *
- * @return		Referinta la serverul gasit
- * @retval NULL	Nu exista un server cu acel hash
+ * @return		serverul gasit
+ * @retval NULL	u exista un server cu acel hash
  */
 static struct server_entry *find_server(struct server_entry *hashring,
 										size_t hashring_size,
@@ -92,16 +92,17 @@ static struct server_entry *find_server(struct server_entry *hashring,
 		}
 	}
 
-	/* Daca nu a fost gasit un server care sa contina hashul (valabil pentru
-	 * `search_containing == 1`), elementul revine primului server. */
+	/* Daca nu a fost gasit un server care sa contina hashul
+	 * (valabil pentru `search_containing == 1`),
+	 * elementul revine primului server. */
 	return search_containing ? &hashring[0] : NULL;
 }
 
 /**
  * @brief Compara 2 structuri `server_entry`.
  *
- * @param a	Pointer la prima valoare
- * @param b Pointer la a 2-a valoare
+ * @param a	pointer la prima valoare
+ * @param b pointer la a 2-a valoare
  *
  * @retval -1	`a` < `b`
  * @retval	1	`a` > `b`
@@ -228,7 +229,7 @@ void loader_add_server(load_balancer *main, int server_id)
 			 * elementele care se aflau in primul server pentru ca aveau hashul
 			 * mai mare decat ultimul server. */
 			min_hash = main->hashring[server_count - 1].hash;
-			hash = 0xffffffff;
+			hash = UINT_MAX;
 		} else {
 			min_hash = main->hashring[index - 1].hash;
 		}

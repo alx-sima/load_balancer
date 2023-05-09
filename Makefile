@@ -24,7 +24,7 @@ format: $(SRC) $(HEADERS)
 tags: $(SRC) $(HEADERS)
 	ctags $^
 
-pack: $(TARGET).zip
+pack: format $(TARGET).zip
 
 $(TARGET).zip: README.md Makefile $(SRC) $(HEADERS)
 	zip -FSr $@ $^
@@ -39,4 +39,3 @@ $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) $^ -c -MMD -MP -MF $(@:.o=.d)
 
 -include $(DEP)
-
