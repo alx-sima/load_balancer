@@ -68,6 +68,8 @@ void ht_transfer_items(hashtable *dest, hashtable *src, unsigned int min_hash,
 		list *rejected = NULL;
 		list_split(src->buckets[i], &accepted, &rejected, min_hash, max_hash);
 
+		/* Elementele care au hashul corespunzator sunt inserate
+		 * in `dest`, iar restul se reintorc in bucket */
 		src->buckets[i] = rejected;
 		while (accepted) {
 			dict_entry pair = accepted->info;

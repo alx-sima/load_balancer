@@ -30,7 +30,7 @@ $(TARGET).zip: README.md Makefile $(SRC) $(HEADERS)
 	zip -FSr $@ $^
 
 clean:
-	rm -f $(TARGET) $(TARGET).zip vgcore.* *.o *.d *.h.gch
+	rm -f $(TARGET) $(TARGET).zip tags vgcore.* *.o *.d *.h.gch
 
 $(TARGET): $(OBJ)
 	$(CC) $^ -o $@
